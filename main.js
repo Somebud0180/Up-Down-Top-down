@@ -20,6 +20,9 @@ let isMoving = 0
 let jumpHeight = 0
 let lastClickTime = 0
 let playerCoord = getFirst(player)
+let belowTile = getTile(0, 0)
+let lowerTile = getTile(0, 0)
+let spawnWidth = 0
 
 // Resources
 const playerDown = bitmap`
@@ -213,35 +216,44 @@ let flagUpTexture = bitmap`
 
 const levels = [
   map`
-.............f
-............bb
-..........b...
-..............
-........b.....
-.......b......
-.....b........
-..b.b.........
-bb............`,
+...............
+...............
+..............f
+............bbb
+..........b....
+...............
+........b......
+.......b.......
+.....b.........
+..b.b..........
+bb.............
+...............`,
   map`
-..b.....bbbb
-..d........i
-............
-............
-............
-............
-............
-.u..u.......
-bb..b.......`,
+............bbb
+........bb....i
+..b............
+..d............
+...............
+...............
+...............
+...............
+...............
+.u..u..........
+bb..b..........
+...............`,
   map`
-bbbbbbbbbbbb
-f......b..bb
-bmbbbbbbb..b
-b....b..bb.b
-bbb.bb.bb..b
-b.........bb
-b.bb.bbbbb.b
-...b.......b
-bbbbbbbbbbbb`,
+bbbbbbbbbbbbbbb
+b......b......f
+bbb.bbbb.bb.bbb
+b...b..b..b...b
+b.b....bbbbb..b
+b.bbbb.b...bb.b
+b..b.bbb.b..b.b
+b.bb...b.bb.b.b
+b....b.b......b
+bbbb.b.bb.bbb.b
+.....b....b...b
+bbbbbbbbbbbbbbb`,
 ]
 
 const stepSFX = tune`
@@ -268,8 +280,8 @@ const finishSFX = tune`
 
 // Game Default States
 let level = 0
-let spawnX = 0
-let spawnY = 7
+let spawnX = 0 // Static
+let spawnY = 0 // Now automated
 let currentPlayer = playerDown
 let gravity = "down"
 let rotation = "horizontal"
@@ -299,7 +311,7 @@ setPushables({
   [player]: []
 })
 
-addSprite(spawnX, spawnY, player)
+spawn()
 
 // Controls
 onInput("k", jumpUp)
@@ -340,12 +352,13 @@ onInput("s", () => {
 // Tile interaction checks
 afterInput(() => {
   let playerCoord = getFirst(player)
+  // console.log(playerCoord)
   let surroundingTiles = [
     getTile(playerCoord.x, playerCoord.y + 1)[0], // Tile below player
     getTile(playerCoord.x + 1, playerCoord.y)[0], // Tile to the right of player
     getTile(playerCoord.x - 1, playerCoord.y)[0], // Tile to the left of playerd
   ]
-  
+
   let flagFound = surroundingTiles.some(tile => tile && (tile.type === flagDown || tile.type === flagUp))
 
   if (flagFound) {
@@ -360,10 +373,26 @@ afterInput(() => {
 })
 
 // Game Logic
+// Dynamic Spawn Finding Code
+function spawnFind() {
+  spawnHeight = height() - 1
+  while (spawnY == 0) {
+    for (spawnHeight >= 0; spawnHeight--;) {
+      console.log("Finding spawn...")
+      if (getTile(spawnX, spawnHeight).length === 0) {
+        spawnY = spawnHeight;
+        console.log("Air found at " + spawnY)
+        break; // exit the loop if air block is found
+      }
+    }
+  }
+}
+
 //Spawn Code
 function spawn() {
   clearText()
   setMap(levels[level])
+  spawnFind()
   addSprite(spawnX, spawnY, player)
 }
 
@@ -376,19 +405,21 @@ function reset() {
 
 // Jump Code
 function jumpUp() {
-  let belowTile = getTile(playerCoord.x, playerCoord.y + 1)
-  let lowerTile = getTile(playerCoord.x, playerCoord.y + 2)
-  
+  if (gravity == "down") {
+    belowTile = getTile(playerCoord.x, playerCoord.y + 1)
+    lowerTile = getTile(playerCoord.x, playerCoord.y + 2)
+  } else if (gravity == "top") {
+    belowTile = getTile(playerCoord.x, playerCoord.y - 1)
+    lowerTile = getTile(playerCoord.x, playerCoord.y - 2)
+  }
   if ((lowerTile.length == 0 && belowTile.length != 0 && gravity != "top") || (lowerTile.length != 0 && belowTile.length == 0 && gravity != "top")) {
-    console.log("Lower "+lowerTile.length)
-    console.log("Below "+belowTile.length)
-      if (gravity == "down") {
-       jumpHeight += 1
-      } else if (gravity == "up") {
-       jumpHeight -= 1
-      }
+    if (gravity == "down") {
+      jumpHeight += 1
+    } else if (gravity == "up") {
+      jumpHeight -= 1
+    }
     playTune(jumpSFX)
-   }
+  }
 }
 
 
@@ -441,7 +472,7 @@ function gravityBlockDetection() {
     getTile(playerCoord.x, playerCoord.y + 1)[0],
     getTile(playerCoord.x, playerCoord.y - 1)[0],
   ]
-  
+
   if (verticalTiles.some(tile => tile && (tile.type === gravityBlockDown))) {
     playTune(gravityChangeSFX)
     gravity = "down"
@@ -470,5 +501,5 @@ function characterInit() {
 }
 
 const gravityDetectionInterval = setInterval(gravityBlockDetection, 500)
-const gravityLoopInterval = setInterval(gravityPull, 300wa)
+const gravityLoopInterval = setInterval(gravityPull, 300)
 const jumpLoopInterval = setInterval(jumpPull, 100)
