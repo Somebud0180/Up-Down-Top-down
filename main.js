@@ -1,10 +1,7 @@
 /*
-First time? Check out the tutorial game:
-https://sprig.hackclub.com/gallery/getting_started
-
-@title: 
-@author: 
-@tags: []
+@title: Up, Down, Top-down
+@author: Somebud0180
+@tags: ["platformer"]
 @addedOn: 2024-00-00
 */
 
@@ -12,43 +9,191 @@ const player = "p";
 const background = "z";
 const textBackground = "y";
 const leftTextBackground = "x";
-const arrow = "a";
+const arrow = "q";
 const block = "b";
-const magicBlock = "m";
-const flagDown = "f";
-const flagUp = "i";
-let gravityBlockDown = "d";
-let gravityBlockUp = "u";
+const magicBlock = "v";
+const flagDown = "o";
+const flagUp = "c";
+const gravityBlockDown = "m";
+const gravityBlockUp = "n";
+
+const buttonW = "w";
+const buttonA = "a";
+const buttonS = "s";
+const buttonD = "d";
+const buttonI = "i";
+const buttonK = "k";
+const buttonJ = "j";
+const buttonL = "l";
+
 let isMoving = 0;
 let jumpHeight = 0;
 let lastClickTime = 0;
+let pointerX = 2
+let pointerY = 6
 let playerCoord;
 let belowTile;
 let lowerTile;
-
-let gravityDetectionInterval;
+let pointerChangeInterval;
+let blockDetectionInterval;
 let gravityLoopInterval;
 let jumpLoopInterval;
 
 // Resources
 
-const buttonL = bitmap`
-0000000000000000
-0000222222220000
-0002222222222000
-0022222222222200
-0222222222222220
-0222022222202220
-0222022222200220
-0222022222200020
-0222022222200020
-0222022222200220
-0222000022202220
-0222222222222220
-0022222222222200
-0002222222222000
-0000222222220000
-0000000000000000`;
+const buttonDefaultTexture = bitmap`
+................
+................
+................
+................
+......2222......
+.....222222.....
+....22222222....
+....22222222....
+....22222222....
+....22222222....
+.....222222.....
+......2222......
+................
+................
+................
+................`;
+const buttonWTexture = bitmap`
+................
+.......22.......
+......2222......
+................
+.....222222.....
+....22022222....
+....22022222....
+....22022222....
+....22022222....
+....22022222....
+....22000022....
+.....222222.....
+................
+................
+................
+................`;
+const buttonATexture = bitmap`
+................
+................
+................
+................
+.....222222.....
+....22022222....
+....22022222....
+....22022222....
+....22022222....
+....22022222....
+....22000022....
+.....222222.....
+................
+......2222......
+.......22.......
+................`;
+const buttonSTexture = bitmap`
+................
+................
+................
+................
+.....222222.....
+....22022222....
+..2.22022222....
+.22.22022222....
+.22.22022222....
+..2.22022222....
+....22000022....
+.....222222.....
+................
+................
+................
+................`;
+const buttonDTexture = bitmap`
+................
+................
+................
+................
+.....222222.....
+....22022222....
+....22022222.2..
+....22022222.22.
+....22022222.22.
+....22022222.2..
+....22000022....
+.....222222.....
+................
+................
+................
+................`;
+const buttonITexture = bitmap`
+................
+.......22.......
+......2222......
+................
+.....222222.....
+....22000222....
+....22022022....
+....22000222....
+....22022022....
+....22022022....
+....22022022....
+.....222222.....
+................
+................
+................
+................`;
+const buttonKTexture = bitmap`
+................
+................
+................
+................
+.....222222.....
+....22000222....
+....22022022....
+....22000222....
+....22022022....
+....22022022....
+....22022022....
+.....222222.....
+................
+......2222......
+.......22.......
+................`;
+const buttonJTexture = bitmap`
+................
+................
+................
+................
+.....222222.....
+....22000222....
+..2.22022022....
+.22.22000222....
+.22.22022022....
+..2.22022022....
+....22022022....
+.....222222.....
+................
+................
+................
+................`;
+const buttonLTexture = bitmap`
+................
+................
+................
+................
+.....222222.....
+....22000222....
+....22022022.2..
+....22000222.22.
+....22022022.22.
+....22022022.2..
+....22022022....
+.....222222.....
+................
+................
+................
+................`;
 
 const playerDown = bitmap`
 ................
@@ -135,7 +280,7 @@ const arrowTexture = bitmap`
 ................
 ................
 ................
-................`
+................`;
 const backgroundTexture = bitmap`
 0000000000000000
 0000000000000000
@@ -292,22 +437,22 @@ const flagUpTexture = bitmap`
 
 const levels = [
   map`
-b.mmmmmmmmmmm.b
-d.mu.......dm.d
-..m.........m..
-..m.........m..
-..mmmmmmmmmmm..
+b.vvvvvvvvvvv.b
+m.vn.......mv.m
+..v.........v..
+..v.........v..
+..vvvvvvvvvvv..
 ...............
 ...............
 ...............
-...........u...
+...........n...
 ...........b...
-u.bb.b.b.bb...f
+n.bb.b.b.bb...o
 b.............b`,
   map`
 ...............
 ...............
-..............f
+..............o
 ............bbb
 ..........b....
 ...............
@@ -319,20 +464,20 @@ bb.............
 ...............`,
   map`
 ...b..b.....bbb
-...b..b.bb....i
+...b..b.bb....c
 ..bb..b........
-..db..b........
-......u........
+..mb..b........
+......m........
 ...............
-...u...........
+...n...........
 ...b...........
 ...b..b........
-.u.bu.b........
+.n.bn.b........
 bb.bb.b........
 ...b..b........`,
   map`
 bbbbbbbbbbbbbbb
-b......b......f
+b......b......o
 bbb.bbbb.bb.bbb
 b...b..b..b...b
 b.b....bbbbb..b
@@ -393,7 +538,7 @@ let tutorial1 = `
 Double-click
 the jump button 
 to get higher
-`
+`;
 
 let tutorial2 = `
 Jump on 
@@ -401,7 +546,7 @@ top of the
 Gravity 
 Block to
 activate
-`
+`;
 
 let errorSpawn = `
   Error: Couldn't 
@@ -415,7 +560,7 @@ let deathText = `You died!`;
 
 // Game Default States
 let inGame = 0;
-let arrowOption = 0
+let pointerOption = 0;
 let level = 0;
 let spawnX = 0; // Static
 let spawnY = 0; // Now automated
@@ -425,35 +570,24 @@ let gravity = "down";
 let rotation = "horizontal";
 
 // Main Menu starts here
-mainMenu()
-
-// Set Level
-function initializeGame() {
-  setTextures();
-  setSolids([player, block]);
-  // setPushables([player]: []});
-  setBackground(background)
-  setMap(levels[level]);
-
-  spawn(); // Start Game
-}
+mainMenu();
 
 // Controls
 onInput("k", () => {
   if (inGame == 1) {
-    jumpUp()
+    jumpUp();
   }
 });
 
 onInput("i", () => {
   if (inGame == 1) {
-    jumpUp()
+    jumpUp();
   }
 });
 
 onInput("l", () => {
   if (inGame == 0) {
-    arrowContinue()
+    pointerContinue();
   }
 });
 
@@ -477,7 +611,7 @@ onInput("d", () => {
 
 onInput("w", () => {
   if (inGame == 0) {
-    arrowUp()
+    pointerUp();
   } else if (inGame == 1) {
     if (gravity == "top") {
       rotation = "vertical";
@@ -490,7 +624,7 @@ onInput("w", () => {
 
 onInput("s", () => {
   if (inGame == 0) {
-    arrowDown()
+    pointerDown();
   } else if (inGame == 1) {
     if (gravity == "top") {
       rotation = "vertical";
@@ -513,7 +647,7 @@ afterInput(() => {
     ];
 
     let flagFound = surroundingTiles.some(
-      (tile) => tile && (tile.type === flagDown || tile.type === flagUp),
+      (tile) => tile && (tile.type == flagDown || tile.type == flagUp),
     );
 
     if (flagFound) {
@@ -527,78 +661,75 @@ afterInput(() => {
 ////////////////////////////
 //Main Menu Code
 function mainMenu() {
-  setTextures()
+  setTextures();
   setMap(levels[level]);
-  setBackground(background)
+  setBackground(background);
   addText(mainMenuTitle, {
     x: 4,
     y: 1,
-    color: color`2`
-  })
+    color: color`2`,
+  });
   addText(mainMenuOptions, {
     x: 3,
     y: 7,
-    color: color`2`
-  })
-  addSprite(2, 6, arrow)
+    color: color`2`,
+  });
+  handleGameIntervals()
+  addSprite(pointerX, pointerY, arrow)
 }
 
-function arrowDown() {
-  if (arrowOption == 0) {
-    getFirst(arrow).y += 2
-    arrowOption++
+function pointerChange() {
+  if (getTile(pointerX, pointerY)[0].type == arrow) {
+  clearTile(pointerX, pointerY)
+  addSprite(pointerX, pointerY, buttonL)
+  } else if (getTile(pointerX, pointerY)[0].type == buttonL) {
+  clearTile(pointerX, pointerY)
+  addSprite(pointerX, pointerY, arrow)
+  }
+}
+
+function pointerDown() {
+  if (pointerOption == 0) {
+    pointerY += 2;
+    pointerOption++;
   } else {
-    playTune(errorSFX)
+    playTune(errorSFX);
   }
 }
 
-function arrowUp() {
-  if (arrowOption == 1) {
-    getFirst(arrow).y -= 2
-    arrowOption--
+function pointerUp() {
+  if (pointerOption == 1) {
+    pointerY -= 2;
+    pointerOption--;
   } else {
-    playTune(errorSFX)
-  }
-}
-function arrowContinue() {
-  if (arrowOption == 0) {
-    initializeGame()
-  } else if (arrowOption == 1) {
-    playTune(errorSFX)
+    playTune(errorSFX);
   }
 }
 
+function pointerContinue() {
+  if (pointerOption == 0) {
+    initializeGame();
+  } else if (pointerOption == 1) {
+    playTune(errorSFX);
+  }
+}
 ////////////////////////////
 // Game Logic
-// Texture Update Code
-function setTextures() {
-  setLegend(
-    [player, currentPlayer],
-    [arrow, arrowTexture],
-    [background, backgroundTexture],
-    [textBackground, textBackgroundTexture],
-    [leftTextBackground, leftTextBackgroundTexture],
-    [block, blockTexture],
-    [magicBlock, magicBlockTexture],
-    [flagDown, flagDownTexture],
-    [flagUp, flagUpTexture],
-    [gravityBlockDown, gravityBlockDownTexture],
-    [gravityBlockUp, gravityBlockUpTexture],
-  );
-}
 
 // Special Map Check
 function mapCheck() {
   if (level == 1) {
-    addText(tutorial1, {x: 1, y: 0, color: color`1`});
+    addText(tutorial1, { x: 1, y: 0, color: color`1` });
+    gravity = "down";
   } else if (level == 2) {
-    addText(tutorial2, {x: 10, y: 8, color: color`1`});
-  } else if ( level ==3) {
+    addText(tutorial2, { x: 10, y: 8, color: color`1` });
+    gravity = "down";
+  } else if (level == 3) {
     gravity = "top";
-  } else{
+  } else {
     gravity = "down";
   }
-};
+}
 
 // Dynamic Spawn Finding Code
 function spawnFind() {
@@ -607,7 +738,7 @@ function spawnFind() {
   while (spawnY == 0) {
     for (spawnHeight >= 0; spawnHeight--;) {
       console.log("Finding spawn...");
-      if (getTile(spawnX, spawnHeight).length === 0 && spawnHeight > 1) {
+      if (getTile(spawnX, spawnHeight).length == 0 && spawnHeight > 1) {
         spawnY = spawnHeight;
         console.log("Air found at " + spawnY);
         break; // Exit the loop if air block is found
@@ -628,6 +759,17 @@ function spawnFind() {
   }
 }
 
+// Set Level
+function initializeGame() {
+  setTextures();
+  setSolids([player, block]);
+  // setPushables([player]: []});
+  setBackground(background);
+  setMap(levels[level]);
+
+  spawn(); // Start Game
+}
+
 //Spawn Code
 function spawn() {
   clearText(); // Cleans stuff before it
@@ -637,24 +779,24 @@ function spawn() {
   spawnFind();
   addSprite(spawnX, spawnY, player);
   inGame = 1;
-  handleGameIntervals()
+  handleGameIntervals();
 }
 
 // Reset Code
 function reset() {
-  playTune(deathSFX)
-  addSprite(4, 5, leftTextBackground) // Makes the text centre
+  playTune(deathSFX);
+  addSprite(4, 5, leftTextBackground); // Makes the text centre
   for (let i = 5; i <= 10; i++) {
     // Adds background to text to make it readable
-    addSprite(i, 5, textBackground)
+    addSprite(i, 5, textBackground);
   }
   addText(deathText, {
-          x: 6,
-          y: 7,
-          color: color`2`,
-        });
+    x: 6,
+    y: 7,
+    color: color`2`,
+  });
   inGame = 2;
-  handleGameIntervals()
+  handleGameIntervals();
   getFirst(player).remove();
   setTimeout(() => spawn(), 3000);
 }
@@ -732,12 +874,12 @@ function gravityBlockDetection() {
     getTile(playerCoord.x, playerCoord.y - 1)[0],
   ];
 
-  if (verticalTiles.some((tile) => tile && tile.type === gravityBlockDown)) {
+  if (verticalTiles.some((tile) => tile && tile.type == gravityBlockDown)) {
     playTune(gravityChangeSFX);
     gravity = "down";
     characterInit();
   } else if (
-    verticalTiles.some((tile) => tile && tile.type === gravityBlockUp)
+    verticalTiles.some((tile) => tile && tile.type == gravityBlockUp)
   ) {
     playTune(gravityChangeSFX);
     gravity = "up";
@@ -761,20 +903,49 @@ function characterInit() {
   setTextures();
 }
 
+// Texture Update Code
+function setTextures() {
+  setLegend(
+    [player, currentPlayer],
+    [arrow, arrowTexture],
+    [background, backgroundTexture],
+    [textBackground, textBackgroundTexture],
+    [leftTextBackground, leftTextBackgroundTexture],
+    [block, blockTexture],
+    [magicBlock, magicBlockTexture],
+    [flagDown, flagDownTexture],
+    [flagUp, flagUpTexture],
+    [gravityBlockDown, gravityBlockDownTexture],
+    [gravityBlockUp, gravityBlockUpTexture],
+    [buttonW, buttonWTexture],
+    [buttonA, buttonATexture],
+    [buttonS, buttonSTexture],
+    [buttonD, buttonDTexture],
+    [buttonI, buttonITexture],
+    [buttonK, buttonKTexture],
+    [buttonJ, buttonJTexture],
+    [buttonL, buttonLTexture],
+  );
+}
+
 function handleGameIntervals() {
   if (inGame == 1) {
     // Clear any existing intervals (Idk why this makes errors go away)
-    clearInterval(gravityDetectionInterval);
+    clearInterval(pointerChangeInterval)
+    clearInterval(blockDetectionInterval);
     clearInterval(gravityLoopInterval);
     clearInterval(jumpLoopInterval);
 
     // Set new intervals
-    gravityDetectionInterval = setInterval(gravityBlockDetection, 400);
+    blockDetectionInterval = setInterval(gravityBlockDetection, 500);
     gravityLoopInterval = setInterval(gravityPull, 300);
     jumpLoopInterval = setInterval(jumpPull, 100);
+  } else if (inGame == 0) {
+    pointerChangeInterval = setInterval(pointerChange, 1000);
   } else {
     // Clear intervals if game is not active
-    clearInterval(gravityDetectionInterval);
+    clearInterval(pointerChangeInterval)
+    clearInterval(blockDetectionInterval);
     clearInterval(gravityLoopInterval);
     clearInterval(jumpLoopInterval);
   }
