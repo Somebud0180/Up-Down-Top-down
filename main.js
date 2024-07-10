@@ -10,6 +10,7 @@ https://sprig.hackclub.com/gallery/getting_started
 
 const player = "p";
 const background = "z";
+const arrow = "a";
 const block = "b";
 const magicBlock = "m";
 const flagDown = "f";
@@ -19,7 +20,7 @@ let gravityBlockUp = "u";
 let isMoving = 0;
 let jumpHeight = 0;
 let lastClickTime = 0;
-let playerCoord = getFirst(player);
+let playerCoord;
 let belowTile;
 let lowerTile;
 
@@ -33,31 +34,31 @@ const playerDown = bitmap`
 ................
 ................
 ................
+.......22.......
+......2222......
+......2222......
 ................
-.......00.......
-......0220......
-......0000......
-................
-......0000......
-...0002222000...
-....02222220....
-.....022220.....
-.....022220.....
-......0220......
-.......00.......`;
+......2222......
+...2222222222...
+....22222222....
+.....222222.....
+.....222222.....
+......2222......
+.......22.......
+................`;
 const playerUp = bitmap`
-.......00.......
-......0220......
-.....022220.....
-.....022220.....
-....02222220....
-...0002222000...
-......0000......
 ................
-......0000......
-......0220......
-.......00.......
+.......22.......
+......2222......
+.....222222.....
+.....222222.....
+....22222222....
+...2222222222...
+......2222......
 ................
+......2222......
+......2222......
+.......22.......
 ................
 ................
 ................
@@ -67,14 +68,14 @@ const playerTop = bitmap`
 ................
 ................
 ................
-.......00.......
-......0220......
-..LLL022220LLL..
-.L110222222011L.
-.L110222222011L.
-..LLL022220LLL..
-......0220......
-.......00.......
+.......11.......
+......1221......
+..LLL122221LLL..
+.L221222222122L.
+.L221222222122L.
+..LLL122221LLL..
+......1221......
+.......11.......
 ................
 ................
 ................
@@ -82,38 +83,55 @@ const playerTop = bitmap`
 const playerTopSide = bitmap`
 ................
 .......LL.......
+......L22L......
+......L22L......
 ......L11L......
+......1221......
+.....122221.....
+....12222221....
+....12222221....
+.....122221.....
+......1221......
 ......L11L......
-......L00L......
-......0220......
-.....022220.....
-....02222220....
-....02222220....
-.....022220.....
-......0220......
-......L00L......
-......L11L......
-......L11L......
+......L22L......
+......L22L......
 .......LL.......
 ................`;
 
 let backgroundTexture = bitmap`
-1171171171171177
-1711711711711117
-7117117117111111
-1171171171111111
-1711711711111117
-7117117111111171
-1171171111111711
-1711711111117117
-7117111111171171
-1171111111711711
-1711111117117117
-7111111171171171
-1111111711711711
-1111117117117117
-7111171171171171
-7711711711711711`;
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000`;
+let arrowTexture = bitmap`
+........22......
+........222.....
+........2222....
+........22222...
+.2222222222222..
+.22222222222222.
+.22222222222222.
+.2222222222222..
+........22222...
+........2222....
+........222.....
+........22......
+................
+................
+................
+................`
 let magicBlockTexture = bitmap`
 0000000000000000
 0202222222222220
@@ -132,22 +150,22 @@ let magicBlockTexture = bitmap`
 0222222222222220
 0000000000000000`;
 let blockTexture = bitmap`
-0000000000000000
-0202222222222220
-0200000000000020
-0200000000000020
-0200222222220020
-0200000000020020
-0200200000020020
-0200200770020020
-0200200770020020
-0200200000020020
-0200200000020020
-0200222222020020
-0200000000000020
-0200000000000000
-0222222222222220
-0000000000000000`;
+0022222222222222
+2002222222222222
+2200000000000022
+2200000000000022
+2200222222220022
+2200000000020022
+2200200000020022
+2200200770020022
+2200200770020022
+2200200000020022
+2200200000020022
+2200222222020022
+2200000000000002
+2200000000000000
+2222222222222220
+2222222222222222`;
 let gravityBlockDownTexture = bitmap`
 ................
 ......7777......
@@ -219,6 +237,19 @@ let flagUpTexture = bitmap`
 
 const levels = [
   map`
+b.mmmmmmmmmmm.b
+d.mu.......dm.d
+..m.........m..
+..m.........m..
+..mmmmmmmmmmm..
+...............
+...............
+...............
+...........u...
+...........b...
+u.bb..b.b.b...f
+b.............b`,
+  map`
 ...............
 ...............
 ..............f
@@ -259,6 +290,10 @@ bbbb.b.bb.bbb.b
 bbbbbbbbbbbbbbb`,
 ];
 
+const errorSFX = tune`
+500: D4-500,
+500: C4-500,
+15000`;
 const stepSFX = tune`
 37.5,
 37.5: G4~37.5,
@@ -282,6 +317,19 @@ const finishSFX = tune`
 6960`;
 
 // Texts (Looks more clean here)
+let mainMenuTitle = `
+  Up  Down
+  
+  Top-Down
+`;
+
+let mainMenuOptions = `
+  Start Game
+  ----------
+  
+  Guide
+`;
+
 let errorSpawn = `
   Error: Couldn't 
         
@@ -296,6 +344,7 @@ let deathText = `
 
 // Game Default States
 let inGame = 0;
+let arrowOption = 0
 let level = 0;
 let spawnX = 0; // Static
 let spawnY = 0; // Now automated
@@ -304,54 +353,59 @@ let currentPlayer = playerDown;
 let gravity = "down";
 let rotation = "horizontal";
 
-// Set Level
-function setTextures() {
-  setLegend(
-    [player, currentPlayer],
-    [background, backgroundTexture],
-    [block, blockTexture],
-    [magicBlock, magicBlockTexture],
-    [flagDown, flagDownTexture],
-    [flagUp, flagUpTexture],
-    [gravityBlockDown, gravityBlockDownTexture],
-    [gravityBlockUp, gravityBlockUpTexture],
-  );
+// Main Menu starts here
+function mainMenu() {
+  setTextures()
+  setMap(levels[level]);
+  setBackground(background)
+  addText(mainMenuTitle, {
+    x: 4,
+    y: 1,
+    color: color`2`
+  })
+  addText(mainMenuOptions, {
+    x: 3,
+    y: 7,
+    color: color`2`
+  })
+  addSprite(2, 6, arrow)
+
 }
 
-setTextures();
+mainMenu()
 
-setSolids([player, block]);
+// Set Level
+function initializeGame() {
+  setTextures();
+  setSolids([player, block]);
+  setPushables({
+    [player]: [], });
+  setBackground(background)
+  setMap(levels[level]);
 
-setMap(levels[level]);
-// setBackground(backgroundTexture) NOT WORKING
-
-setPushables({
-  [player]: [],
-});
-
-// Start Game
-spawn();
+  spawn(); // Start Game
+}
 
 // Controls
 onInput("k", () => {
   if (inGame == 1) {
-    jumpUp
+    jumpUp()
   }
 });
 
 onInput("i", () => {
   if (inGame == 1) {
-    jumpUp
+    jumpUp()
   }
 });
 
 onInput("a", () => {
-    if (inGame == 1) {
-      rotation = "horizontal";
-      getFirst(player).x -= 1;
-      playTune(stepSFX);
-      characterInit();
-    }
+  if (inGame == 1) {
+    rotation = "horizontal";
+    getFirst(player).x -= 1;
+    playTune(stepSFX);
+    characterInit();
+  }
 });
 
 onInput("d", () => {
@@ -364,30 +418,34 @@ onInput("d", () => {
 });
 
 onInput("w", () => {
-    if (inGame == 1) {
-      if (gravity == "top") {
-        rotation = "vertical";
-        getFirst(player).y -= 1;
-        playTune(stepSFX);
-        characterInit();
-      }
+  if (inGame == 0) {
+    arrowUp()
+  } else if (inGame == 1) {
+    if (gravity == "top") {
+      rotation = "vertical";
+      getFirst(player).y -= 1;
+      playTune(stepSFX);
+      characterInit();
     }
+  }
 });
 
 onInput("s", () => {
-    if (inGame == 1) {
-      if (gravity == "top") {
-        rotation = "vertical";
-        getFirst(player).y += 1;
-        playTune(stepSFX);
-        characterInit();
-      }
+  if (inGame == 0) {
+    arrowDown()
+  } else if (inGame == 1) {
+    if (gravity == "top") {
+      rotation = "vertical";
+      getFirst(player).y += 1;
+      playTune(stepSFX);
+      characterInit();
     }
+  }
 });
 
 // Tile interaction checks
 afterInput(() => {
-  if (inGame = 1) {
+  if (inGame == 1) {
     let playerCoord = getFirst(player);
     // console.log("Player checking")
     let surroundingTiles = [
@@ -409,9 +467,44 @@ afterInput(() => {
 });
 
 // Game Logic
+// Main Menu Arrow Code
+// Arrow Down
+function arrowDown() {
+  if (arrowOption == 0) {
+    getFirst(arrow).y += 2
+    arrowOption++
+  } else {
+    playTune(errorSFX)
+  }
+}
+
+function arrowUp() {
+  if (arrowOption == 1) {
+    getFirst(arrow).y -= 2
+    arrowOption--
+  } else {
+    playTune(errorSFX)
+  }
+}
+
+// Texture Update Code
+function setTextures() {
+  setLegend(
+    [player, currentPlayer],
+    [arrow, arrowTexture],
+    [background, backgroundTexture],
+    [block, blockTexture],
+    [magicBlock, magicBlockTexture],
+    [flagDown, flagDownTexture],
+    [flagUp, flagUpTexture],
+    [gravityBlockDown, gravityBlockDownTexture],
+    [gravityBlockUp, gravityBlockUpTexture],
+  );
+}
+
 // Special Map Check
 function mapCheck() {
-  if (level == 2) {
+  if (level == 3) {
     gravity = "top";
   }
 }
@@ -481,7 +574,6 @@ function jumpUp() {
   ) {
     if (gravity == "down") {
       jumpHeight += 1;
-      console.log("Jump")
     } else if (gravity == "up") {
       jumpHeight -= 1;
     }
@@ -569,15 +661,18 @@ function characterInit() {
 }
 
 function handleGameIntervals() {
-  console.log("Game Check")
   if (inGame == 1) {
-    console.log("Game Mode 1")
-    const gravityDetectionInterval = setInterval(gravityBlockDetection, 500);
-    const gravityLoopInterval = setInterval(gravityPull, 300);
-    const jumpLoopInterval = setInterval(jumpPull, 100);
+    // Clear any existing intervals (Idk why this makes errors go away)
+    clearInterval(gravityDetectionInterval);
+    clearInterval(gravityLoopInterval);
+    clearInterval(jumpLoopInterval);
+
+    // Set new intervals
+    gravityDetectionInterval = setInterval(gravityBlockDetection, 500);
+    gravityLoopInterval = setInterval(gravityPull, 300);
+    jumpLoopInterval = setInterval(jumpPull, 100);
   } else {
-    // Clear intervals if inGame is not 1
-    console.log("Game Mode 2")
+    // Clear intervals if game is not active
     clearInterval(gravityDetectionInterval);
     clearInterval(gravityLoopInterval);
     clearInterval(jumpLoopInterval);
