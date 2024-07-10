@@ -29,8 +29,9 @@ const buttonL = "l";
 let isMoving = 0;
 let jumpHeight = 0;
 let lastClickTime = 0;
-let pointerX = 2
-let pointerY = 6
+let currentPointer = "";
+let pointerX = 2;
+let pointerY = 6;
 let playerCoord;
 let belowTile;
 let lowerTile;
@@ -452,6 +453,19 @@ b.............b`,
   map`
 ...............
 ...............
+...............
+...w.......i...
+..s.d.....j.l..
+...a.......k...
+...............
+...............
+...............
+...............
+...............
+...............`,
+  map`
+...............
+...............
 ..............o
 ............bbb
 ..........b....
@@ -534,6 +548,11 @@ let mainMenuOptions = `
   -----
 `;
 
+let backButton = `
+Back
+----
+`;
+
 let tutorial1 = `
 Double-click
 the jump button 
@@ -559,8 +578,10 @@ let errorSpawn = `
 let deathText = `You died!`;
 
 // Game Default States
-let inGame = 0;
+let gameMode = 0; // 0 for Main Menu; 1 for In-game; 2 for Death
+let modeZero = 1; // 1 for Main Menu; 2 for Guide
 let pointerOption = 0;
+let backButtonState = "2"; // 1 is Gray (unselected); 2 is White (selected)
 let level = 0;
 let spawnX = 0; // Static
 let spawnY = 0; // Now automated
@@ -574,25 +595,25 @@ mainMenu();
 
 // Controls
 onInput("k", () => {
-  if (inGame == 1) {
+  if (gameMode == 1) {
     jumpUp();
   }
 });
 
 onInput("i", () => {
-  if (inGame == 1) {
+  if (gameMode == 1) {
     jumpUp();
   }
 });
 
 onInput("l", () => {
-  if (inGame == 0) {
+  if (gameMode == 0) {
     pointerContinue();
   }
 });
 
 onInput("a", () => {
-  if (inGame == 1) {
+  if (gameMode == 1) {
     rotation = "horizontal";
     getFirst(player).x -= 1;
     playTune(stepSFX);
@@ -601,7 +622,7 @@ onInput("a", () => {
 });
 
 onInput("d", () => {
-  if (inGame == 1) {
+  if (gameMode == 1) {
     rotation = "horizontal";
     getFirst(player).x += 1;
     playTune(stepSFX);
@@ -610,9 +631,9 @@ onInput("d", () => {
 });
 
 onInput("w", () => {
-  if (inGame == 0) {
+  if (gameMode == 0) {
     pointerUp();
-  } else if (inGame == 1) {
+  } else if (gameMode == 1) {
     if (gravity == "top") {
       rotation = "vertical";
       getFirst(player).y -= 1;
@@ -623,9 +644,9 @@ onInput("w", () => {
 });
 
 onInput("s", () => {
-  if (inGame == 0) {
+  if (gameMode == 0) {
     pointerDown();
-  } else if (inGame == 1) {
+  } else if (gameMode == 1) {
     if (gravity == "top") {
       rotation = "vertical";
       getFirst(player).y += 1;
@@ -637,7 +658,7 @@ onInput("s", () => {
 
 // Tile interaction checks
 afterInput(() => {
-  if (inGame == 1) {
+  if (gameMode == 1) {
     let playerCoord = getFirst(player);
     // console.log("Player checking")
     let surroundingTiles = [
@@ -661,9 +682,17 @@ afterInput(() => {
 ////////////////////////////
 //Main Menu Code
 function mainMenu() {
+  pointerX = 2;
+  pointerY = 6;
+  gameMode = 0;
+  modeZero = 1;
+  handleGameIntervals();
+  clearText();
   setTextures();
+  level = 0;
   setMap(levels[level]);
   setBackground(background);
+  // Text
   addText(mainMenuTitle, {
     x: 4,
     y: 1,
@@ -674,43 +703,110 @@ function mainMenu() {
     y: 7,
     color: color`2`,
   });
-  handleGameIntervals()
-  addSprite(pointerX, pointerY, arrow)
+}
+
+function guideMenu() {
+  gameMode = 0;
+  modeZero = 2;
+  handleGameIntervals();
+  clearText();
+  setTextures();
+  level = 1;
+  setMap(levels[level]);
+  setBackground(background);
+
+  // Text
+  addText(backButton, {
+    x: 2,
+    y: 0,
+    color: backButtonState,
+  });
 }
 
 function pointerChange() {
-  if (getTile(pointerX, pointerY)[0].type == arrow) {
-  clearTile(pointerX, pointerY)
-  addSprite(pointerX, pointerY, buttonL)
-  } else if (getTile(pointerX, pointerY)[0].type == buttonL) {
-  clearTile(pointerX, pointerY)
-  addSprite(pointerX, pointerY, arrow)
+  if (modeZero == 1) {
+    console.log("Pointer modeZero 1");
+    if (currentPointer == arrow) {
+      clearTile(pointerX, pointerY);
+      addSprite(pointerX, pointerY, buttonL);
+    } else {
+      clearTile(pointerX, pointerY);
+      addSprite(pointerX, pointerY, arrow);
+    }
+    currentPointer = getTile(pointerX, pointerY)[0].type;
+  } else if (modeZero == 2) {
+    console.log("Pointer modeZero 2");
+    if (currentPointer == 1) {
+      console.log("Not yet implemented");
+    } else {
+      currentPointer = 0;
+    }
+    // Change back button color
+    if (pointerOption == 0) {
+      console.log("backButtonState " + backButtonState);
+      backButtonState = color`2`;
+      guideMenu();
+    } else {
+      console.log("backButtonState " + backButtonState);
+      backButtonState = color`1`;
+      guideMenu();
+    }
   }
 }
 
 function pointerDown() {
-  if (pointerOption == 0) {
-    pointerY += 2;
-    pointerOption++;
-  } else {
-    playTune(errorSFX);
+  if (modeZero == 1) {
+    if (pointerOption == 0) {
+      clearTile(pointerX, pointerY);
+      pointerY += 2;
+      pointerOption++;
+      pointerChange();
+    } else {
+      playTune(errorSFX);
+    }
+  } else if (modeZero == 2) {
+    if (pointerOption < 4) {
+      pointerOption++;
+      pointerChange();
+    } else {
+      playTune(errorSFX);
+    }
   }
 }
 
 function pointerUp() {
-  if (pointerOption == 1) {
-    pointerY -= 2;
-    pointerOption--;
-  } else {
-    playTune(errorSFX);
+  if (modeZero == 1) {
+    if (pointerOption == 1) {
+      clearTile(pointerX, pointerY);
+      pointerY -= 2;
+      pointerOption--;
+      pointerChange();
+    } else {
+      playTune(errorSFX);
+    }
+  } else if (modeZero == 2) {
+    if (pointerOption > 0) {
+      pointerOption--;
+      pointerChange();
+    } else {
+      playTune(errorSFX);
+    }
   }
 }
 
 function pointerContinue() {
-  if (pointerOption == 0) {
-    initializeGame();
-  } else if (pointerOption == 1) {
-    playTune(errorSFX);
+  if (modeZero == 1) {
+    if (pointerOption == 0) {
+      initializeGame();
+    } else if (pointerOption == 1) {
+      pointerOption = 0; // Return to first option
+      guideMenu();
+    }
+  } else if (modeZero == 2) {
+    if (pointerOption == 0) {
+      pointerOption = 0; // Return to first option
+      mainMenu();
+    }
   }
 }
 ////////////////////////////
@@ -718,13 +814,13 @@ function pointerContinue() {
 
 // Special Map Check
 function mapCheck() {
-  if (level == 1) {
+  if (level == 2) {
     addText(tutorial1, { x: 1, y: 0, color: color`1` });
     gravity = "down";
-  } else if (level == 2) {
+  } else if (level == 3) {
     addText(tutorial2, { x: 10, y: 8, color: color`1` });
     gravity = "down";
-  } else if (level == 3) {
+  } else if (level == 4) {
     gravity = "top";
   } else {
     gravity = "down";
@@ -778,7 +874,7 @@ function spawn() {
   setMap(levels[level]);
   spawnFind();
   addSprite(spawnX, spawnY, player);
-  inGame = 1;
+  gameMode = 1;
   handleGameIntervals();
 }
 
@@ -795,7 +891,7 @@ function reset() {
     y: 7,
     color: color`2`,
   });
-  inGame = 2;
+  gameMode = 2;
   handleGameIntervals();
   getFirst(player).remove();
   setTimeout(() => spawn(), 3000);
@@ -929,9 +1025,9 @@ function setTextures() {
 }
 
 function handleGameIntervals() {
-  if (inGame == 1) {
-    // Clear any existing intervals (Idk why this makes errors go away)
-    clearInterval(pointerChangeInterval)
+  if (gameMode == 1) {
+    // Clear any existing intervals
+    clearInterval(pointerChangeInterval);
     clearInterval(blockDetectionInterval);
     clearInterval(gravityLoopInterval);
     clearInterval(jumpLoopInterval);
@@ -940,11 +1036,15 @@ function handleGameIntervals() {
     blockDetectionInterval = setInterval(gravityBlockDetection, 500);
     gravityLoopInterval = setInterval(gravityPull, 300);
     jumpLoopInterval = setInterval(jumpPull, 100);
-  } else if (inGame == 0) {
+  } else if (gameMode == 0) {
+    // Clear any existing intervals
+    clearInterval(pointerChangeInterval);
+
+    // Set interval for pointer texture swap
     pointerChangeInterval = setInterval(pointerChange, 1000);
   } else {
     // Clear intervals if game is not active
-    clearInterval(pointerChangeInterval)
+    clearInterval(pointerChangeInterval);
     clearInterval(blockDetectionInterval);
     clearInterval(gravityLoopInterval);
     clearInterval(jumpLoopInterval);
