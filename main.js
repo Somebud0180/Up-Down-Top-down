@@ -10,6 +10,8 @@ https://sprig.hackclub.com/gallery/getting_started
 
 const player = "p";
 const background = "z";
+const textBackground = "y";
+const leftTextBackground = "x";
 const arrow = "a";
 const block = "b";
 const magicBlock = "m";
@@ -29,6 +31,25 @@ let gravityLoopInterval;
 let jumpLoopInterval;
 
 // Resources
+
+const buttonL = bitmap`
+0000000000000000
+0000222222220000
+0002222222222000
+0022222222222200
+0222222222222220
+0222022222202220
+0222022222200220
+0222022222200020
+0222022222200020
+0222022222200220
+0222000022202220
+0222222222222220
+0022222222222200
+0002222222222000
+0000222222220000
+0000000000000000`;
+
 const playerDown = bitmap`
 ................
 ................
@@ -98,24 +119,7 @@ const playerTopSide = bitmap`
 .......LL.......
 ................`;
 
-let backgroundTexture = bitmap`
-0000000000000000
-0000000000000000
-0000000000000000
-0000000000000000
-0000000000000000
-0000000000000000
-0000000000000000
-0000000000000000
-0000000000000000
-0000000000000000
-0000000000000000
-0000000000000000
-0000000000000000
-0000000000000000
-0000000000000000
-0000000000000000`;
-let arrowTexture = bitmap`
+const arrowTexture = bitmap`
 ........22......
 ........222.....
 ........2222....
@@ -132,41 +136,92 @@ let arrowTexture = bitmap`
 ................
 ................
 ................`
-let magicBlockTexture = bitmap`
+const backgroundTexture = bitmap`
 0000000000000000
-0202222222222220
-0200000000000020
-0200000000000020
-0200222222220020
-0200000000020020
-0200200000020020
-0200200550020020
-0200200550020020
-0200200000020020
-0200200000020020
-0200222222020020
-0200000000000020
-0200000000000000
-0222222222222220
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
+0000000000000000
 0000000000000000`;
-let blockTexture = bitmap`
-0022222222222222
-2002222222222222
-2200000000000022
-2200000000000022
-2200222222220022
-2200000000020022
-2200200000020022
-2200200770020022
-2200200770020022
-2200200000020022
-2200200000020022
-2200222222020022
-2200000000000002
-2200000000000000
-2222222222222220
-2222222222222222`;
-let gravityBlockDownTexture = bitmap`
+const textBackgroundTexture = bitmap`
+................
+3333333333333333
+33LL333LLLL3LLL3
+3LLLL3LLLLL3LLL3
+LLLLLLLLLLLLLLLL
+LLLLLLLLLLLLLLLL
+LLLLLLLLLLLLLLLL
+LLLLLLLLLLLLLLLL
+LLLLLLLLLLLLLLLL
+LLLLLLLLLLLLLLLL
+LLLLLLLLLLLLLLLL
+LLLLLLLLLLLLLLLL
+LLLLLLLLLLLLLLLL
+LLLLLLLLLLLLLLLL
+LLLLLLLLLLLLLLLL
+LLLLLLLLLLLLLLLL`;
+const leftTextBackgroundTexture = bitmap`
+................
+.......333333333
+.......33L3LLLLL
+.......3LLLLLLLL
+.......LLLLLLLLL
+.......LLLLLLLLL
+.......LLLLLLLLL
+.......LLLLLLLLL
+.......LLLLLLLLL
+.......LLLLLLLLL
+.......LLLLLLLLL
+.......LLLLLLLLL
+.......LLLLLLLLL
+.......LLLLLLLLL
+.......LLLLLLLLL
+.......LLLLLLLLL`;
+const magicBlockTexture = bitmap`
+LLLLLLLLLLLLLLLL
+L00LLLLLLLLLLLLL
+L0000000000000LL
+LL000000000000LL
+LL000000000000LL
+LL000077770000LL
+LL000777777000LL
+LL000775577000LL
+LL000775577000LL
+LL000777777000LL
+LL000077770000LL
+LL000000000000LL
+LL000000000000LL
+LL0000000000000L
+LLLLLLLLLLLLL00L
+LLLLLLLLLLLLLLLL`;
+const blockTexture = bitmap`
+LLLLLLLLLLLLLLLL
+L00LLLLLLLLLLLLL
+L0000000000000LL
+LL000000000000LL
+LL000000000000LL
+LL000077770000LL
+LL000777777000LL
+LL000777777000LL
+LL000777777000LL
+LL000777777000LL
+LL000077770000LL
+LL000000000000LL
+LL000000000000LL
+LL0000000000000L
+LLLLLLLLLLLLL00L
+LLLLLLLLLLLLLLLL`;
+const gravityBlockDownTexture = bitmap`
 ................
 ......7777......
 ......7777......
@@ -183,7 +238,7 @@ let gravityBlockDownTexture = bitmap`
 ..7777....7777..
 ...77......77...
 ................`;
-let gravityBlockUpTexture = bitmap`
+const gravityBlockUpTexture = bitmap`
 ................
 ...99......99...
 ..9999....9999..
@@ -200,7 +255,7 @@ let gravityBlockUpTexture = bitmap`
 ......9999......
 ......9999......
 ................`;
-let flagDownTexture = bitmap`
+const flagDownTexture = bitmap`
 ................
 ................
 ..CCDDDD...DDD..
@@ -217,7 +272,7 @@ let flagDownTexture = bitmap`
 ..CC............
 ..CC............
 ..CC............`;
-let flagUpTexture = bitmap`
+const flagUpTexture = bitmap`
 ............CC..
 ............CC..
 ............CC..
@@ -247,7 +302,7 @@ d.mu.......dm.d
 ...............
 ...........u...
 ...........b...
-u.bb..b.b.b...f
+u.bb.b.b.bb...f
 b.............b`,
   map`
 ...............
@@ -263,18 +318,18 @@ b.............b`,
 bb.............
 ...............`,
   map`
-............bbb
-........bb....i
-..b............
-..d............
+...b..b.....bbb
+...b..b.bb....i
+..bb..b........
+..db..b........
+......u........
 ...............
-...............
-...............
-...............
-...............
-.u..u..........
-bb..b..........
-...............`,
+...u...........
+...b...........
+...b..b........
+.u.bu.b........
+bb.bb.b........
+...b..b........`,
   map`
 bbbbbbbbbbbbbbb
 b......b......f
@@ -291,25 +346,28 @@ bbbbbbbbbbbbbbb`,
 ];
 
 const errorSFX = tune`
-500: D4-500,
-500: C4-500,
-15000`;
+150: D4^150 + C4/150,
+150: C4~150,
+4500`;
 const stepSFX = tune`
-37.5,
-37.5: G4~37.5,
-37.5: C4/37.5 + D4/37.5 + G4-37.5,
-1087.5`;
+50: C4^50 + C5^50,
+1550`;
 const jumpSFX = tune`
-375: B4^375 + C5^375 + D5^375 + A4~375 + G4~375,
-11625`;
-const doubleJumpSFX = tune`
-714.2857142857143,
-714.2857142857143: B4~714.2857142857143 + C5~714.2857142857143 + D5^714.2857142857143 + E5^714.2857142857143 + F5^714.2857142857143,
-21428.57142857143`;
+428.57142857142856: F4~428.57142857142856 + G4~428.57142857142856,
+13285.714285714284`;
 const gravityChangeSFX = tune`
-185.1851851851852: C5-185.1851851851852,
-185.1851851851852: D5-185.1851851851852,
-5555.555555555556`;
+125: D4~125 + C4^125,
+125: E4^125,
+125: F4~125 + G4~125,
+125: G4~125,
+3500`;
+const deathSFX = tune`
+37.5: B4^37.5,
+37.5: B4~37.5,
+37.5: B4^37.5,
+37.5: B4~37.5,
+37.5: B4^37.5,
+1012.5`;
 const finishSFX = tune`
 240: A5~240,
 240: B5~240,
@@ -328,7 +386,22 @@ let mainMenuOptions = `
   ----------
   
   Guide
+  -----
 `;
+
+let tutorial1 = `
+Double-click
+the jump button 
+to get higher
+`
+
+let tutorial2 = `
+Jump on 
+top of the 
+Gravity 
+Block to
+activate
+`
 
 let errorSpawn = `
   Error: Couldn't 
@@ -338,9 +411,7 @@ let errorSpawn = `
   for player spawn
 `;
 
-let deathText = `
-  You died!
-`;
+let deathText = `You died!`;
 
 // Game Default States
 let inGame = 0;
@@ -354,32 +425,13 @@ let gravity = "down";
 let rotation = "horizontal";
 
 // Main Menu starts here
-function mainMenu() {
-  setTextures()
-  setMap(levels[level]);
-  setBackground(background)
-  addText(mainMenuTitle, {
-    x: 4,
-    y: 1,
-    color: color`2`
-  })
-  addText(mainMenuOptions, {
-    x: 3,
-    y: 7,
-    color: color`2`
-  })
-  addSprite(2, 6, arrow)
-
-}
-
 mainMenu()
 
 // Set Level
 function initializeGame() {
   setTextures();
   setSolids([player, block]);
-  setPushables({
-    [player]: [], });
+  // setPushables([player]: []});
   setBackground(background)
   setMap(levels[level]);
 
@@ -396,6 +448,12 @@ onInput("k", () => {
 onInput("i", () => {
   if (inGame == 1) {
     jumpUp()
+  }
+});
+
+onInput("l", () => {
+  if (inGame == 0) {
+    arrowContinue()
   }
 });
 
@@ -466,9 +524,25 @@ afterInput(() => {
   }
 });
 
-// Game Logic
-// Main Menu Arrow Code
-// Arrow Down
+////////////////////////////
+//Main Menu Code
+function mainMenu() {
+  setTextures()
+  setMap(levels[level]);
+  setBackground(background)
+  addText(mainMenuTitle, {
+    x: 4,
+    y: 1,
+    color: color`2`
+  })
+  addText(mainMenuOptions, {
+    x: 3,
+    y: 7,
+    color: color`2`
+  })
+  addSprite(2, 6, arrow)
+}
+
 function arrowDown() {
   if (arrowOption == 0) {
     getFirst(arrow).y += 2
@@ -486,13 +560,24 @@ function arrowUp() {
     playTune(errorSFX)
   }
 }
+function arrowContinue() {
+  if (arrowOption == 0) {
+    initializeGame()
+  } else if (arrowOption == 1) {
+    playTune(errorSFX)
+  }
+}
 
+////////////////////////////
+// Game Logic
 // Texture Update Code
 function setTextures() {
   setLegend(
     [player, currentPlayer],
     [arrow, arrowTexture],
     [background, backgroundTexture],
+    [textBackground, textBackgroundTexture],
+    [leftTextBackground, leftTextBackgroundTexture],
     [block, blockTexture],
     [magicBlock, magicBlockTexture],
     [flagDown, flagDownTexture],
@@ -504,10 +589,16 @@ function setTextures() {
 
 // Special Map Check
 function mapCheck() {
-  if (level == 3) {
+  if (level == 1) {
+    addText(tutorial1, {x: 1, y: 0, color: color`1`});
+  } else if (level == 2) {
+    addText(tutorial2, {x: 10, y: 8, color: color`1`});
+  } else if ( level ==3) {
     gravity = "top";
+  } else{
+    gravity = "down";
   }
-}
+};
 
 // Dynamic Spawn Finding Code
 function spawnFind() {
@@ -540,9 +631,9 @@ function spawnFind() {
 //Spawn Code
 function spawn() {
   clearText(); // Cleans stuff before it
+  mapCheck();
   characterInit();
   setMap(levels[level]);
-  mapCheck();
   spawnFind();
   addSprite(spawnX, spawnY, player);
   inGame = 1;
@@ -551,10 +642,20 @@ function spawn() {
 
 // Reset Code
 function reset() {
+  playTune(deathSFX)
+  addSprite(4, 5, leftTextBackground) // Makes the text centre
+  for (let i = 5; i <= 10; i++) {
+    // Adds background to text to make it readable
+    addSprite(i, 5, textBackground)
+  }
+  addText(deathText, {
+          x: 6,
+          y: 7,
+          color: color`2`,
+        });
   inGame = 2;
   handleGameIntervals()
   getFirst(player).remove();
-  addText(deathText, -5, 2, color`0`);
   setTimeout(() => spawn(), 3000);
 }
 
@@ -564,7 +665,7 @@ function jumpUp() {
   if (gravity == "down") {
     belowTile = getTile(playerCoord.x, playerCoord.y + 1);
     lowerTile = getTile(playerCoord.x, playerCoord.y + 2);
-  } else if (gravity == "top") {
+  } else if (gravity == "up") {
     belowTile = getTile(playerCoord.x, playerCoord.y - 1);
     lowerTile = getTile(playerCoord.x, playerCoord.y - 2);
   }
@@ -604,7 +705,7 @@ function gravityPull() {
   } else if (gravity == "up" && upCollision.length != 0) {
     isMoving = 0;
   } else {
-    isMoving += 1;
+    isMoving += 1; // Jumping feels better requiring two iterations than longer intervals
   }
 
   // Apply Gravity
@@ -668,7 +769,7 @@ function handleGameIntervals() {
     clearInterval(jumpLoopInterval);
 
     // Set new intervals
-    gravityDetectionInterval = setInterval(gravityBlockDetection, 500);
+    gravityDetectionInterval = setInterval(gravityBlockDetection, 400);
     gravityLoopInterval = setInterval(gravityPull, 300);
     jumpLoopInterval = setInterval(jumpPull, 100);
   } else {
