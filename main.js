@@ -8,21 +8,24 @@ https://sprig.hackclub.com/gallery/getting_started
 @addedOn: 2024-00-00
 */
 
-const player = "p"
-const background = "z"
-const block = "b"
-const magicBlock = "m"
-const flagDown = "f"
-const flagUp = "i"
-let gravityBlockDown = "d"
-let gravityBlockUp = "u"
-let isMoving = 0
-let jumpHeight = 0
-let lastClickTime = 0
-let playerCoord = getFirst(player)
-let belowTile = getTile(0, 0)
-let lowerTile = getTile(0, 0)
-let spawnWidth = 0
+const player = "p";
+const background = "z";
+const block = "b";
+const magicBlock = "m";
+const flagDown = "f";
+const flagUp = "i";
+let gravityBlockDown = "d";
+let gravityBlockUp = "u";
+let isMoving = 0;
+let jumpHeight = 0;
+let lastClickTime = 0;
+let playerCoord = getFirst(player);
+let belowTile;
+let lowerTile;
+
+let gravityDetectionInterval;
+let gravityLoopInterval;
+let jumpLoopInterval;
 
 // Resources
 const playerDown = bitmap`
@@ -41,7 +44,7 @@ const playerDown = bitmap`
 .....022220.....
 .....022220.....
 ......0220......
-.......00.......`
+.......00.......`;
 const playerUp = bitmap`
 .......00.......
 ......0220......
@@ -58,7 +61,7 @@ const playerUp = bitmap`
 ................
 ................
 ................
-................`
+................`;
 const playerTop = bitmap`
 ................
 ................
@@ -75,7 +78,7 @@ const playerTop = bitmap`
 ................
 ................
 ................
-................`
+................`;
 const playerTopSide = bitmap`
 ................
 .......LL.......
@@ -92,7 +95,7 @@ const playerTopSide = bitmap`
 ......L11L......
 ......L11L......
 .......LL.......
-................`
+................`;
 
 let backgroundTexture = bitmap`
 1171171171171177
@@ -110,7 +113,7 @@ let backgroundTexture = bitmap`
 1111111711711711
 1111117117117117
 7111171171171171
-7711711711711711`
+7711711711711711`;
 let magicBlockTexture = bitmap`
 0000000000000000
 0202222222222220
@@ -127,7 +130,7 @@ let magicBlockTexture = bitmap`
 0200000000000020
 0200000000000000
 0222222222222220
-0000000000000000`
+0000000000000000`;
 let blockTexture = bitmap`
 0000000000000000
 0202222222222220
@@ -144,7 +147,7 @@ let blockTexture = bitmap`
 0200000000000020
 0200000000000000
 0222222222222220
-0000000000000000`
+0000000000000000`;
 let gravityBlockDownTexture = bitmap`
 ................
 ......7777......
@@ -161,7 +164,7 @@ let gravityBlockDownTexture = bitmap`
 .777777..777777.
 ..7777....7777..
 ...77......77...
-................`
+................`;
 let gravityBlockUpTexture = bitmap`
 ................
 ...99......99...
@@ -178,7 +181,7 @@ let gravityBlockUpTexture = bitmap`
 ......9999......
 ......9999......
 ......9999......
-................`
+................`;
 let flagDownTexture = bitmap`
 ................
 ................
@@ -195,7 +198,7 @@ let flagDownTexture = bitmap`
 ..CC............
 ..CC............
 ..CC............
-..CC............`
+..CC............`;
 let flagUpTexture = bitmap`
 ............CC..
 ............CC..
@@ -212,7 +215,7 @@ let flagUpTexture = bitmap`
 ..DDDDDDDDDDCC..
 ..DDD...DDDDCC..
 ................
-................`
+................`;
 
 const levels = [
   map`
@@ -254,37 +257,52 @@ b....b.b......b
 bbbb.b.bb.bbb.b
 .....b....b...b
 bbbbbbbbbbbbbbb`,
-]
+];
 
 const stepSFX = tune`
 37.5,
 37.5: G4~37.5,
 37.5: C4/37.5 + D4/37.5 + G4-37.5,
-1087.5`
+1087.5`;
 const jumpSFX = tune`
 375: B4^375 + C5^375 + D5^375 + A4~375 + G4~375,
-11625`
+11625`;
 const doubleJumpSFX = tune`
 714.2857142857143,
 714.2857142857143: B4~714.2857142857143 + C5~714.2857142857143 + D5^714.2857142857143 + E5^714.2857142857143 + F5^714.2857142857143,
-21428.57142857143`
+21428.57142857143`;
 const gravityChangeSFX = tune`
 185.1851851851852: C5-185.1851851851852,
 185.1851851851852: D5-185.1851851851852,
-5555.555555555556`
+5555.555555555556`;
 const finishSFX = tune`
 240: A5~240,
 240: B5~240,
 240: A5~240,
-6960`
+6960`;
+
+// Texts (Looks more clean here)
+let errorSpawn = `
+  Error: Couldn't 
+        
+  find empty tile
+        
+  for player spawn
+`;
+
+let deathText = `
+  You died!
+`;
 
 // Game Default States
-let level = 0
-let spawnX = 0 // Static
-let spawnY = 0 // Now automated
-let currentPlayer = playerDown
-let gravity = "down"
-let rotation = "horizontal"
+let inGame = 0;
+let level = 0;
+let spawnX = 0; // Static
+let spawnY = 0; // Now automated
+let spawnHeight = 0;
+let currentPlayer = playerDown;
+let gravity = "down";
+let rotation = "horizontal";
 
 // Set Level
 function setTextures() {
@@ -297,92 +315,130 @@ function setTextures() {
     [flagUp, flagUpTexture],
     [gravityBlockDown, gravityBlockDownTexture],
     [gravityBlockUp, gravityBlockUpTexture],
-  )
+  );
 }
 
-setTextures()
+setTextures();
 
-setSolids([player, block])
+setSolids([player, block]);
 
-setMap(levels[level])
+setMap(levels[level]);
 // setBackground(backgroundTexture) NOT WORKING
 
 setPushables({
-  [player]: []
-})
+  [player]: [],
+});
 
-spawn()
+// Start Game
+spawn();
 
 // Controls
-onInput("k", jumpUp)
-onInput("i", jumpUp)
+onInput("k", () => {
+  if (inGame == 1) {
+    jumpUp
+  }
+});
+
+onInput("i", () => {
+  if (inGame == 1) {
+    jumpUp
+  }
+});
 
 onInput("a", () => {
-  rotation = "horizontal"
-  getFirst(player).x -= 1
-  playTune(stepSFX)
-  characterInit()
-})
+    if (inGame == 1) {
+      rotation = "horizontal";
+      getFirst(player).x -= 1;
+      playTune(stepSFX);
+      characterInit();
+    }
+});
 
 onInput("d", () => {
-  rotation = "horizontal"
-  getFirst(player).x += 1
-  playTune(stepSFX)
-  characterInit()
-})
+  if (inGame == 1) {
+    rotation = "horizontal";
+    getFirst(player).x += 1;
+    playTune(stepSFX);
+    characterInit();
+  }
+});
 
 onInput("w", () => {
-  if (gravity == "top") {
-    rotation = "vertical"
-    getFirst(player).y -= 1
-    playTune(stepSFX)
-    characterInit()
-  }
-})
+    if (inGame == 1) {
+      if (gravity == "top") {
+        rotation = "vertical";
+        getFirst(player).y -= 1;
+        playTune(stepSFX);
+        characterInit();
+      }
+    }
+});
 
 onInput("s", () => {
-  if (gravity == "top") {
-    rotation = "vertical"
-    getFirst(player).y += 1
-    playTune(stepSFX)
-    characterInit()
-  }
-})
+    if (inGame == 1) {
+      if (gravity == "top") {
+        rotation = "vertical";
+        getFirst(player).y += 1;
+        playTune(stepSFX);
+        characterInit();
+      }
+    }
+});
 
 // Tile interaction checks
 afterInput(() => {
-  let playerCoord = getFirst(player)
-  // console.log(playerCoord)
-  let surroundingTiles = [
-    getTile(playerCoord.x, playerCoord.y + 1)[0], // Tile below player
-    getTile(playerCoord.x + 1, playerCoord.y)[0], // Tile to the right of player
-    getTile(playerCoord.x - 1, playerCoord.y)[0], // Tile to the left of playerd
-  ]
+  if (inGame = 1) {
+    let playerCoord = getFirst(player);
+    // console.log("Player checking")
+    let surroundingTiles = [
+      getTile(playerCoord.x, playerCoord.y + 1)[0], // Tile below player
+      getTile(playerCoord.x + 1, playerCoord.y)[0], // Tile to the right of player
+      getTile(playerCoord.x - 1, playerCoord.y)[0], // Tile to the left of playerd
+    ];
 
-  let flagFound = surroundingTiles.some(tile => tile && (tile.type === flagDown || tile.type === flagUp))
+    let flagFound = surroundingTiles.some(
+      (tile) => tile && (tile.type === flagDown || tile.type === flagUp),
+    );
 
-  if (flagFound) {
-    level++
-    if (level == 2) {
-      gravity = "top"
+    if (flagFound) {
+      playTune(finishSFX, 1);
+      level++;
+      spawn();
     }
-    spawn()
-    playTune(finishSFX, 1)
-    characterInit()
   }
-})
+});
 
 // Game Logic
+// Special Map Check
+function mapCheck() {
+  if (level == 2) {
+    gravity = "top";
+  }
+}
+
 // Dynamic Spawn Finding Code
 function spawnFind() {
-  spawnHeight = height() - 1
+  spawnY = 0;
+  spawnHeight = height() - 1;
   while (spawnY == 0) {
     for (spawnHeight >= 0; spawnHeight--;) {
-      console.log("Finding spawn...")
-      if (getTile(spawnX, spawnHeight).length === 0) {
+      console.log("Finding spawn...");
+      if (getTile(spawnX, spawnHeight).length === 0 && spawnHeight > 1) {
         spawnY = spawnHeight;
-        console.log("Air found at " + spawnY)
-        break; // exit the loop if air block is found
+        console.log("Air found at " + spawnY);
+        break; // Exit the loop if air block is found
+      } else if (spawnHeight < 2) {
+        addText(errorSpawn, {
+          x: -6,
+          y: 5,
+          color: color`3`,
+        });
+        setTimeout(() => {
+          console.log("Error: Couldn't find empty tile for player spawn");
+          level--;
+          spawn();
+        }, 5000);
+        return; // Break the loop if no empty tile is found
       }
     }
   }
@@ -390,76 +446,86 @@ function spawnFind() {
 
 //Spawn Code
 function spawn() {
-  clearText()
-  setMap(levels[level])
-  spawnFind()
-  addSprite(spawnX, spawnY, player)
+  clearText(); // Cleans stuff before it
+  characterInit();
+  setMap(levels[level]);
+  mapCheck();
+  spawnFind();
+  addSprite(spawnX, spawnY, player);
+  inGame = 1;
+  handleGameIntervals()
 }
 
 // Reset Code
 function reset() {
-  clearText()
-  setMap(levels[level])
-  addSprite(spawnX, spawnY, player)
+  inGame = 2;
+  handleGameIntervals()
+  getFirst(player).remove();
+  addText(deathText, -5, 2, color`0`);
+  setTimeout(() => spawn(), 3000);
 }
 
 // Jump Code
 function jumpUp() {
+  playerCoord = getFirst(player);
   if (gravity == "down") {
-    belowTile = getTile(playerCoord.x, playerCoord.y + 1)
-    lowerTile = getTile(playerCoord.x, playerCoord.y + 2)
+    belowTile = getTile(playerCoord.x, playerCoord.y + 1);
+    lowerTile = getTile(playerCoord.x, playerCoord.y + 2);
   } else if (gravity == "top") {
-    belowTile = getTile(playerCoord.x, playerCoord.y - 1)
-    lowerTile = getTile(playerCoord.x, playerCoord.y - 2)
+    belowTile = getTile(playerCoord.x, playerCoord.y - 1);
+    lowerTile = getTile(playerCoord.x, playerCoord.y - 2);
   }
-  if ((lowerTile.length == 0 && belowTile.length != 0 && gravity != "top") || (lowerTile.length != 0 && belowTile.length == 0 && gravity != "top")) {
+  if (
+    (lowerTile.length == 0 && belowTile.length != 0 && gravity != "top") ||
+    (lowerTile.length != 0 && belowTile.length == 0 && gravity != "top")
+  ) {
     if (gravity == "down") {
-      jumpHeight += 1
+      jumpHeight += 1;
+      console.log("Jump")
     } else if (gravity == "up") {
-      jumpHeight -= 1
+      jumpHeight -= 1;
     }
-    playTune(jumpSFX)
+    playTune(jumpSFX);
   }
 }
-
 
 // Jump Velocity Code
 function jumpPull() {
   while (jumpHeight < 0) {
-    getFirst(player).y++
-    jumpHeight++
+    getFirst(player).y++;
+    jumpHeight++;
   }
   while (jumpHeight > 0) {
-    getFirst(player).y--
-    jumpHeight--
+    getFirst(player).y--;
+    jumpHeight--;
   }
 }
 
 // Gravity Code
 function gravityPull() {
-  playerCoord = getFirst(player)
-  let downCollision = getTile(playerCoord.x, playerCoord.y + 1)
-  let upCollision = getTile(playerCoord.x, playerCoord.y - 1)
+  playerCoord = getFirst(player);
+  let downCollision = getTile(playerCoord.x, playerCoord.y + 1);
+  let upCollision = getTile(playerCoord.x, playerCoord.y - 1);
   // Collision check
   if (gravity == "down" && downCollision.length != 0) {
-    isMoving = 0
+    isMoving = 0;
   } else if (gravity == "up" && upCollision.length != 0) {
-    isMoving = 0
+    isMoving = 0;
   } else {
-    isMoving += 1
+    isMoving += 1;
   }
 
   // Apply Gravity
   if (isMoving > 1) {
     if (gravity == "down" && downCollision == 0) {
-      getFirst(player).y++
+      getFirst(player).y++;
       if (getFirst(player).y == height() - 1) {
-        reset()
+        reset();
       }
     } else if (gravity == "up" && upCollision == 0) {
-      getFirst(player).y--
+      getFirst(player).y--;
       if (getFirst(player).y == 0) {
-        reset()
+        reset();
       }
     }
   }
@@ -467,39 +533,53 @@ function gravityPull() {
 
 // Gravity Block Code
 function gravityBlockDetection() {
-  playerCoord = getFirst(player)
+  playerCoord = getFirst(player);
   let verticalTiles = [
     getTile(playerCoord.x, playerCoord.y + 1)[0],
     getTile(playerCoord.x, playerCoord.y - 1)[0],
-  ]
+  ];
 
-  if (verticalTiles.some(tile => tile && (tile.type === gravityBlockDown))) {
-    playTune(gravityChangeSFX)
-    gravity = "down"
-    characterInit()
-  } else if (verticalTiles.some(tile => tile && (tile.type === gravityBlockUp))) {
-    playTune(gravityChangeSFX)
-    gravity = "up"
-    characterInit()
+  if (verticalTiles.some((tile) => tile && tile.type === gravityBlockDown)) {
+    playTune(gravityChangeSFX);
+    gravity = "down";
+    characterInit();
+  } else if (
+    verticalTiles.some((tile) => tile && tile.type === gravityBlockUp)
+  ) {
+    playTune(gravityChangeSFX);
+    gravity = "up";
+    characterInit();
   }
 }
 
 // Character Update Code
 function characterInit() {
   if (gravity == "down") {
-    currentPlayer = playerDown
+    currentPlayer = playerDown;
   } else if (gravity == "up") {
-    currentPlayer = playerUp
+    currentPlayer = playerUp;
   } else if (gravity == "top") {
     if (rotation == "vertical") {
-      currentPlayer = playerTop
+      currentPlayer = playerTop;
     } else if (rotation == "horizontal") {
-      currentPlayer = playerTopSide
+      currentPlayer = playerTopSide;
     }
   }
-  setTextures()
+  setTextures();
 }
 
-const gravityDetectionInterval = setInterval(gravityBlockDetection, 500)
-const gravityLoopInterval = setInterval(gravityPull, 300)
-const jumpLoopInterval = setInterval(jumpPull, 100)
+function handleGameIntervals() {
+  console.log("Game Check")
+  if (inGame == 1) {
+    console.log("Game Mode 1")
+    const gravityDetectionInterval = setInterval(gravityBlockDetection, 500);
+    const gravityLoopInterval = setInterval(gravityPull, 300);
+    const jumpLoopInterval = setInterval(jumpPull, 100);
+  } else {
+    // Clear intervals if inGame is not 1
+    console.log("Game Mode 2")
+    clearInterval(gravityDetectionInterval);
+    clearInterval(gravityLoopInterval);
+    clearInterval(jumpLoopInterval);
+  }
+}
