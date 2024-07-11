@@ -25,13 +25,14 @@ const buttonI = "i";
 const buttonK = "k";
 const buttonJ = "j";
 const buttonL = "l";
+const blockActive = "h";
 let buttonActive = "g";
-let blockActive = "h"
 
 let isMoving = 0;
 let jumpHeight = 0;
 let lastClickTime = 0;
 let currentPointer = "";
+let highlightCoord;
 let pointerX = 2;
 let pointerY = 6;
 let optionCoord;
@@ -340,7 +341,7 @@ const buttonHighlightTexture = bitmap`
 ................`;
 const blockHighlightTexture = bitmap`
 2222222222222222
-................
+2222222222222222
 ................
 ................
 ................
@@ -651,7 +652,7 @@ bb.bb.b........
 ...b..b........`,
   map`
 bbbbbbbbbbbbbbb
-b......b......o
+b.....pb......o
 bbb.bbbb.bb.bbb
 b...b..b..b...b
 b.b....bbbbb..b
@@ -744,8 +745,8 @@ let menuMode = 1; // 1 for Main Menu; 2 for Guide
 let pointerOption = 0;
 let backButtonState = "2"; // 1 is Gray (unselected); 2 is White (selected)
 let level = 1; // 0 for Guide Menu; 1 for Main Menu; The rest are game maps
-let spawnX = 0; // Static
-let spawnY = 0; // Now automated
+let spawnX = 0; // Automatic
+let spawnY = 0; // Automatic
 let spawnHeight = 0;
 let currentPlayer = playerDown;
 let gravity = "down";
@@ -878,12 +879,11 @@ function guideMenu() {
   menuMode = 2;
   handleGameIntervals();
   clearText();
-  characterInit();
+  setTextures();
   level = 0;
   setMap(levels[level]);
   setBackground(background);
 
-  // Text
   addText(backButton, {
     x: 2,
     y: 0,
@@ -908,42 +908,51 @@ function pointerChange() {
 
 // Handles pointer selection in guide on-demand
 function pointerUpdate() {
+  if (pointerOption == 1) {
+    updateGlyph(buttonW);
+  } else if (pointerOption == 2) {
+    updateGlyph(buttonA);
+  } else if (pointerOption == 3) {
+    updateGlyph(buttonS);
+  } else if (pointerOption == 4) {
+    updateGlyph(buttonD);
+  } else if (pointerOption == 5) {
+    updateGlyph(buttonI);
+  } else if (pointerOption == 6) {
+    updateGlyph(buttonJ);
+  } else if (pointerOption == 7) {
+    updateGlyph(buttonK);
+  } else if (pointerOption == 8) {
+    updateGlyph(buttonL);
+  } else if (pointerOption == 9) {
+    updateGlyph(player);
+  } else if (pointerOption == 10) {
+    updateGlyph(block);
+  } else if (pointerOption == 11) {
+    updateGlyph(magicBlock);
+  } else if (pointerOption == 12) {
+    updateGlyph(flagUp);
+  } else if (pointerOption == 13) {
+    updateGlyph(gravityBlockDown);
+  } else {
+    pointerOption = 0;
+    updateGlyph();
+  }
+  // Change back button color
   if (pointerOption == 0) {
-      updateGlyph();
-    } else if (pointerOption == 1) {
-      updateGlyph(buttonW);
-    } else if (pointerOption == 2) {
-      updateGlyph(buttonA);
-    } else if (pointerOption == 3) {
-      updateGlyph(buttonS);
-    } else if (pointerOption == 4) {
-      updateGlyph(buttonD);
-    } else if (pointerOption == 5) {
-      updateGlyph(buttonI);
-    } else if (pointerOption == 6) {
-      updateGlyph(buttonJ);
-    } else if (pointerOption == 7) {
-      updateGlyph(buttonK);
-    } else if (pointerOption == 8) {
-      updateGlyph(buttonL);
-    } else if (pointerOption == 9) {
-      updateGlyph(player);
-    } else if (pointerOption == 10) {
-      updateGlyph(block);
-    } else if (pointerOption == 11) {
-      updateGlyph(magicBlock);
-    } else if (pointerOption == 12) {
-      updateGlyph(flagUp);
-    } else if (pointerOption == 13) {
-      updateGlyph(gravityBlockDown);
-    }
-    // Change back button color
-    if (pointerOption == 0) {
-      backButtonState = color`2`;
-      guideMenu();
-    } else {
-      backButtonState = color`1`;
-      guideMenu();
+    clearText();
+    addText(backButton, {
+      x: 2,
+      y: 0,
+      color: color`2`,
+    });
+  } else {
+    clearText();
+    addText(backButton, {
+      x: 2,
+      y: 0,
+      color: color`1`,
+    });
   }
 }
 
@@ -1033,30 +1042,20 @@ function pointerContinue() {
 
 // Update current selected item texture to highlight in the guid
 function updateGlyph(activeOption) {
-  if (buttonActive != "g") {
-    getFirst(buttonActive).remove;
-  } else if (getFirst(blockActive) !== undefined) {
-    getFirst(blockActive).remove;
+  let blockActiveSprite = getFirst(blockActive);
+  if (blockActiveSprite) {
+    blockActiveSprite.remove();
   }
   if (pointerOption == 0) {
     buttonActive = "g"; // Reset buttonActive and activeOption when switching from buttons to back
-  } else if (pointerOption == 1) {
-    optionCoord = getFirst(activeOption);
-    addSprite(optionCoord.x, optionCoord.y, buttonActive);
-    buttonActive = activeOption;
-  } else if (pointerOption < 9) {
-    optionCoord = getFirst(activeOption);
-    addSprite(optionCoord.x, optionCoord.y, buttonActive);
+  } else if (pointerOption > 0 && pointerOption < 9) {
     buttonActive = activeOption;
   } else if (pointerOption > 8) {
-    buttonActive = "g"; // Reset buttonActive and activeOption textures
+    buttonActive = "g";
     optionCoord = getFirst(activeOption);
-    let highlightCoord = getTile(optionCoord.x, optionCoord.y - 1);
-    console.log(highlightCoord)
-    console.log("coords")
-    console.log(getFirst(activeOption))
-    addSprite(highlightCoord.x, highlightCoord.y, blockActive);
+    addSprite(optionCoord.x, 8, blockActive);
   }
+  setTextures();
 }
 
 // Game Logic
@@ -1076,37 +1075,10 @@ function mapCheck() {
   }
 }
 
-// Dynamic Spawn Finding Code
-function spawnFind() {
-  spawnY = 0;
-  spawnHeight = height() - 1;
-  while (spawnY == 0) {
-    for (spawnHeight >= 0; spawnHeight--;) {
-      if (getTile(spawnX, spawnHeight).length == 0 && spawnHeight > 1) {
-        spawnY = spawnHeight;
-        break; // Exit the loop if air block is found
-      } else if (spawnHeight < 2) {
-        addText(errorSpawn, {
-          x: -6,
-          y: 5,
-          color: color`3`,
-        });
-        setTimeout(() => {
-          console.log("Error: Couldn't find empty tile for player spawn");
-          level--;
-          spawn();
-        }, 5000);
-        return; // Break the loop if no empty tile is found
-      }
-    }
-  }
-}
-
-// Set Level
+// Setup the game
 function initializeGame() {
   setTextures();
   setSolids([player, block]);
-  // setPushables([player]: []});
   setBackground(background);
   setMap(levels[level]);
 
@@ -1142,6 +1114,43 @@ function reset() {
   handleGameIntervals();
   getFirst(player).remove();
   setTimeout(() => spawn(), 3000);
+}
+
+// Dynamic Spawn Finding Code (Allows manually placed or automatic air finding)
+function spawnFind() {
+  if (getFirst(player) === undefined) {
+    spawnX = 0;
+    spawnY = 0;
+    spawnHeight = height() - 1;
+    while (spawnY == 0) {
+      for (spawnHeight >= 0; spawnHeight--;) {
+        // Scan from bottom to top
+        if (getTile(spawnX, spawnHeight).length == 0 && spawnHeight > 1) {
+          // Check for air block within bounds
+          spawnY = spawnHeight;
+          break; // Exit the loop if air block is found
+        } else if (spawnHeight < 2) {
+          // Check if exceeded bounds
+          addText(errorSpawn, {
+            x: -6,
+            y: 5,
+            color: color`3`,
+          });
+          setTimeout(() => {
+            console.log("Error: Couldn't find empty tile for player spawn");
+            level--;
+            spawn();
+          }, 5000);
+          return; // Break the loop if no empty tile is found
+        }
+      }
+    }
+  } else {
+    // If a player in the map is detected
+    spawnX = getFirst(player).x;
+    spawnY = getFirst(player).y;
+    clearTile(spawnX, spawnY);
+  }
 }
 
 // Jump Code
@@ -1271,6 +1280,7 @@ function setTextures() {
         [buttonJ, buttonJGlyph],
         [buttonK, buttonKGlyph],
         [buttonL, buttonLGlyph],
+        [blockActive, blockHighlightTexture],
       );
     } else if (menuMode == 2) {
       setLegend(
@@ -1298,7 +1308,6 @@ function setTextures() {
   } else if (gameState == 1) {
     setLegend(
       [player, currentPlayer],
-      [arrow, arrowTexture],
       [background, backgroundTexture],
       [textBackground, textBackgroundTexture],
       [leftTextBackground, leftTextBackgroundTexture],
