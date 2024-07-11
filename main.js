@@ -40,6 +40,7 @@ let playerCoord;
 let belowTile;
 let lowerTile;
 let pointerChangeInterval;
+let flagDetectionInterval;
 let blockDetectionInterval;
 let gravityLoopInterval;
 let jumpLoopInterval;
@@ -608,7 +609,7 @@ const levels = [
 ..........o..n.
 .p..b..v..c..m.
 ...............
-...............
+.....l.........
 ...............
 ...............`,
   map`
@@ -661,7 +662,7 @@ b..b.bbb.b..b.b
 b.bb...b.bb.b.b
 b....b.b......b
 bbbb.b.bb.bbb.b
-.....b....b...b
+b....b....b...b
 bbbbbbbbbbbbbbb`,
 ];
 
@@ -725,18 +726,51 @@ Jump on
 top of the 
 Gravity 
 Block to
-activate
-`;
+activate`;
 
 let errorSpawn = `
-  Error: Couldn't 
-        
-  find empty tile
-        
-  for player spawn
-`;
+Error: Couldn't 
+find empty tile
+for player spawn`;
 
 let deathText = `You died!`;
+
+// Guide Texts
+let menuGuide = `Press   
+
+to activate`;
+// Controls
+let upLGuide = `Moves player 
+upward in 
+Top-down mode`;
+let leftLGuide = `Moves player to 
+the left`;
+let downLGuide = `Moves player 
+downward in
+Top-down mode`;
+let rightLGuide = `Moves player to 
+the right`;
+let upRGuide = `Makes player jump`;
+let leftRGuide = `...`;
+let downRGuide = `Makes player jump,
+also acts as a
+back button in
+the menu`;
+let rightRGuide = `Confirm menu
+selection`;
+// Blocks
+let playerGuide = `It's you!`;
+let blockGuide = `A solid platform,
+good for standing
+on`;
+let magicBlockGuide = `???`;
+let flagGuide = `Get near it
+and you finish
+the level`;
+let gravityBlockGuide = `Stand on this
+block and watch
+as you flip
+upside down`;
 
 // Game Default States
 // Do not move this up, currentPlayer requires the texture from above
@@ -757,7 +791,10 @@ mainMenu();
 
 // Controls
 onInput("k", () => {
-  if (gameState == 1) {
+  if (gameState == 0) {
+    pointerContinue("k");
+    pointerBack();
+  } else if (gameState == 1) {
     jumpUp();
   }
 });
@@ -776,7 +813,7 @@ onInput("l", () => {
 
 onInput("a", () => {
   if (gameState == 0) {
-    pointerBack();
+    pointerUp();
   } else if (gameState == 1) {
     rotation = "horizontal";
     getFirst(player).x -= 1;
@@ -786,7 +823,9 @@ onInput("a", () => {
 });
 
 onInput("d", () => {
-  if (gameState == 1) {
+  if (gameState == 0) {
+    pointerDown();
+  } else if (gameState == 1) {
     rotation = "horizontal";
     getFirst(player).x += 1;
     playTune(stepSFX);
@@ -822,33 +861,10 @@ onInput("s", () => {
 
 // Tile interaction checks
 afterInput(() => {
-  if (gameState == 1) {
-    let playerCoord = getFirst(player);
-    let surroundingTiles = [
-      getTile(playerCoord.x, playerCoord.y + 1)[0], // Tile below player
-      getTile(playerCoord.x + 1, playerCoord.y)[0], // Tile to the right of player
-      getTile(playerCoord.x - 1, playerCoord.y)[0], // Tile to the left of playerd
-    ];
-
-    let flagFound = surroundingTiles.some(
-      (tile) => tile && (tile.type == flagDown || tile.type == flagUp),
-    );
-
-    if (flagFound) {
-      playTune(finishSFX, 1);
-      if (levels.length - 1 == level) {
-        mainMenu();
-        return;
-      } else {
-        level++;
-        spawn();
-      }
-    }
-  }
+  if (gameState == 1) {}
 });
 
-////////////////////////////
-//Main Menu Code
+/// Main Menu Code
 function mainMenu() {
   pointerX = 2;
   pointerY = 6;
@@ -861,7 +877,7 @@ function mainMenu() {
   setMap(levels[level]);
   setBackground(background);
   pointerChange(); // Trigger pointer spawning in advance (Rather than wait for interval)
-  // Text
+
   addText(mainMenuTitle, {
     x: 4,
     y: 1,
@@ -883,7 +899,12 @@ function guideMenu() {
   level = 0;
   setMap(levels[level]);
   setBackground(background);
+  addBack();
+  addText(menuGuide, { x: 1, y: 12, color: color`1` });
+}
 
+function addBack() {
+  clearText();
   addText(backButton, {
     x: 2,
     y: 0,
@@ -909,6 +930,9 @@ function pointerChange() {
 // Handles pointer selection in guide on-demand
 function pointerUpdate() {
   if (pointerOption == 1) {
+    if (getTile(5, 9) !== undefined) {
+      clearTile(5, 9);
+    }
     updateGlyph(buttonW);
   } else if (pointerOption == 2) {
     updateGlyph(buttonA);
@@ -940,19 +964,11 @@ function pointerUpdate() {
   }
   // Change back button color
   if (pointerOption == 0) {
-    clearText();
-    addText(backButton, {
-      x: 2,
-      y: 0,
-      color: color`2`,
-    });
+    backButtonState = color`2`;
+    addBack();
   } else {
-    clearText();
-    addText(backButton, {
-      x: 2,
-      y: 0,
-      color: color`1`,
-    });
+    backButtonState = color`1`;
+    addBack();
   }
 }
 
@@ -1020,10 +1036,13 @@ function pointerBack() {
 }
 
 // Handles pointer selection and runs/displays them accordingly
-function pointerContinue() {
+function pointerContinue(triggered) {
   if (menuMode == 1) {
     // Main Menu
-    if (pointerOption == 0) {
+    if (triggered == "k") {
+      // Check if triggered by back button
+      playTune(errorSFX);
+    } else if (pointerOption == 0) {
       // Start the Game
       initializeGame();
     } else if (pointerOption == 1) {
@@ -1033,10 +1052,17 @@ function pointerContinue() {
     }
   } else if (menuMode == 2) {
     // Guide Menu
-    if (pointerOption == 0) {
+    if (triggered == "k") {
+      // Check if triggered by back button
+      if (pointerOption == 0) {
+        mainMenu();
+      }
+    } else if (pointerOption == 0) {
       pointerOption = 0; // Return to first option
       mainMenu();
-    } else if (pointerOption == 1) {}
+    } else if (pointerOption > 0) {
+      guideText();
+    }
   }
 }
 
@@ -1058,7 +1084,50 @@ function updateGlyph(activeOption) {
   setTextures();
 }
 
-// Game Logic
+function guideText() {
+  if (pointerOption == 1) {
+    addBack(); // Clears text and rewrites the back button
+    addText(upLGuide, { x: 1, y: 12, color: color`2` });
+  } else if (pointerOption == 2) {
+    addBack();
+    addText(leftLGuide, { x: 1, y: 12, color: color`2` });
+  } else if (pointerOption == 3) {
+    addBack();
+    addText(downLGuide, { x: 1, y: 12, color: color`2` });
+  } else if (pointerOption == 4) {
+    addBack();
+    addText(rightLGuide, { x: 1, y: 12, color: color`2` });
+  } else if (pointerOption == 5) {
+    addBack();
+    addText(upRGuide, { x: 1, y: 12, color: color`2` });
+  } else if (pointerOption == 6) {
+    addBack();
+    addText(leftRGuide, { x: 1, y: 12, color: color`2` });
+  } else if (pointerOption == 7) {
+    addBack();
+    addText(downRGuide, { x: 1, y: 11, color: color`2` });
+  } else if (pointerOption == 8) {
+    addBack();
+    addText(rightRGuide, { x: 1, y: 12, color: color`2` });
+  } else if (pointerOption == 9) {
+    addBack();
+    addText(playerGuide, { x: 1, y: 12, color: color`2` });
+  } else if (pointerOption == 10) {
+    addBack();
+    addText(blockGuide, { x: 1, y: 12, color: color`2` });
+  } else if (pointerOption == 11) {
+    addBack();
+    addText(magicBlockGuide, { x: 1, y: 12, color: color`2` });
+  } else if (pointerOption == 12) {
+    addBack();
+    addText(flagGuide, { x: 1, y: 12, color: color`2` });
+  } else if (pointerOption == 13) {
+    addBack();
+    addText(gravityBlockGuide, { x: 1, y: 11, color: color`2` });
+  }
+}
+
+/// Game Logic
 
 // Special Map Check
 function mapCheck() {
@@ -1132,13 +1201,15 @@ function spawnFind() {
         } else if (spawnHeight < 2) {
           // Check if exceeded bounds
           addText(errorSpawn, {
-            x: -6,
-            y: 5,
+            x: 2,
+            y: 6,
             color: color`3`,
           });
           setTimeout(() => {
             console.log("Error: Couldn't find empty tile for player spawn");
-            level--;
+            if (level > 1) {
+              level--;
+            }
             spawn();
           }, 5000);
           return; // Break the loop if no empty tile is found
@@ -1255,6 +1326,31 @@ function characterInit() {
   setTextures();
 }
 
+// Checks for a nearby flag and progress the level
+function flagDetection() {
+  let playerCoord = getFirst(player);
+  let surroundingTiles = [
+    getTile(playerCoord.x, playerCoord.y + 1)[0], // Tile below player
+    getTile(playerCoord.x + 1, playerCoord.y)[0], // Tile to the right of player
+    getTile(playerCoord.x - 1, playerCoord.y)[0], // Tile to the left of playerd
+  ];
+
+  let flagFound = surroundingTiles.some(
+    (tile) => tile && (tile.type == flagDown || tile.type == flagUp),
+  );
+
+  if (flagFound) {
+    playTune(finishSFX, 1);
+    if (levels.length - 1 == level) {
+      mainMenu();
+      return;
+    } else {
+      level++;
+      spawn();
+    }
+  }
+}
+
 // Texture Update Code
 function setTextures() {
   if (gameState == 0) {
@@ -1325,16 +1421,19 @@ function handleGameIntervals() {
   if (gameState == 1) {
     // Clear any existing intervals
     clearInterval(pointerChangeInterval);
+    clearInterval(flagDetectionInterval);
     clearInterval(blockDetectionInterval);
     clearInterval(gravityLoopInterval);
     clearInterval(jumpLoopInterval);
 
+    flagDetectionInterval = setInterval(flagDetection, 500); // Set interval for flag detection
     blockDetectionInterval = setInterval(gravityBlockDetection, 500); // Set interval for gravity block detection
     gravityLoopInterval = setInterval(gravityPull, 300); // Set interval for gravity calculation
     jumpLoopInterval = setInterval(jumpPull, 100); // Set interval for jump calculation
   } else if (gameState == 0) {
     // Clear any existing intervals
     clearInterval(pointerChangeInterval);
+    clearInterval(flagDetectionInterval);
     clearInterval(blockDetectionInterval);
     clearInterval(gravityLoopInterval);
     clearInterval(jumpLoopInterval);
@@ -1343,6 +1442,7 @@ function handleGameIntervals() {
   } else {
     // Clear intervals if game is not active
     clearInterval(pointerChangeInterval);
+    clearInterval(flagDetectionInterval);
     clearInterval(blockDetectionInterval);
     clearInterval(gravityLoopInterval);
     clearInterval(jumpLoopInterval);
