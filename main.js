@@ -25,7 +25,7 @@ const buttonI = "i";
 const buttonK = "k";
 const buttonJ = "j";
 const buttonL = "l";
-const buttonActive = "g"
+let buttonActive = "g";
 
 let isMoving = 0;
 let jumpHeight = 0;
@@ -222,6 +222,23 @@ const buttonAInactiveTexture = bitmap`
 ................
 .....111111.....
 ....11011111....
+..1.11011111....
+.11.11011111....
+.11.11011111....
+..1.11011111....
+....11000011....
+.....111111.....
+................
+................
+................
+................`;
+const buttonSInactiveTexture = bitmap`
+................
+................
+................
+................
+.....111111.....
+....11011111....
 ....11011111....
 ....11011111....
 ....11011111....
@@ -231,23 +248,6 @@ const buttonAInactiveTexture = bitmap`
 ................
 ......1111......
 .......11.......
-................`;
-const buttonSInactiveTexture = bitmap`
-................
-................
-................
-................
-.....111111.....
-....11011111....
-..1.11011111....
-.11.11011111....
-.11.11011111....
-..1.11011111....
-....11000011....
-.....111111.....
-................
-................
-................
 ................`;
 const buttonDInactiveTexture = bitmap`
 ................
@@ -577,6 +577,19 @@ const flagUpTexture = bitmap`
 
 const levels = [
   map`
+...............
+...............
+...............
+...w.......i...
+..a.d.....j.l..
+...s.......k...
+...............
+...............
+...............
+...............
+...............
+...............`,
+  map`
 b.vvvvvvvvvvv.b
 m.vn.......mv.m
 ..v.........v..
@@ -585,23 +598,10 @@ m.vn.......mv.m
 ...............
 ...............
 ...............
-...........n...
+...............
 ...........b...
 n.bb.b.b.bb...o
 b.............b`,
-  map`
-...............
-...............
-...............
-...w.......i...
-..s.d.....j.l..
-...a.......k...
-...............
-...............
-...............
-...............
-...............
-...............`,
   map`
 ...............
 ...............
@@ -718,11 +718,11 @@ let deathText = `You died!`;
 
 // Game Default States
 // Do not move this up, currentPlayer requires the texture from above
-let gameMode = 0; // 0 for Main Menu; 1 for In-game; 2 for Death
+let gameState = 0; // 0 for Main Menu; 1 for In-game; 2 for Death
 let modeZero = 1; // 1 for Main Menu; 2 for Guide
 let pointerOption = 0;
 let backButtonState = "2"; // 1 is Gray (unselected); 2 is White (selected)
-let level = 0;
+let level = 1; // 0 for Guide Menu; 1 for Main Menu; The rest are game maps
 let spawnX = 0; // Static
 let spawnY = 0; // Now automated
 let spawnHeight = 0;
@@ -735,25 +735,27 @@ mainMenu();
 
 // Controls
 onInput("k", () => {
-  if (gameMode == 1) {
+  if (gameState == 1) {
     jumpUp();
   }
 });
 
 onInput("i", () => {
-  if (gameMode == 1) {
+  if (gameState == 1) {
     jumpUp();
   }
 });
 
 onInput("l", () => {
-  if (gameMode == 0) {
+  if (gameState == 0) {
     pointerContinue();
   }
 });
 
 onInput("a", () => {
-  if (gameMode == 1) {
+  if (gameState == 0) {
+    pointerBack();
+  } else if (gameState == 1) {
     rotation = "horizontal";
     getFirst(player).x -= 1;
     playTune(stepSFX);
@@ -762,7 +764,7 @@ onInput("a", () => {
 });
 
 onInput("d", () => {
-  if (gameMode == 1) {
+  if (gameState == 1) {
     rotation = "horizontal";
     getFirst(player).x += 1;
     playTune(stepSFX);
@@ -771,9 +773,9 @@ onInput("d", () => {
 });
 
 onInput("w", () => {
-  if (gameMode == 0) {
+  if (gameState == 0) {
     pointerUp();
-  } else if (gameMode == 1) {
+  } else if (gameState == 1) {
     if (gravity == "top") {
       rotation = "vertical";
       getFirst(player).y -= 1;
@@ -784,9 +786,9 @@ onInput("w", () => {
 });
 
 onInput("s", () => {
-  if (gameMode == 0) {
+  if (gameState == 0) {
     pointerDown();
-  } else if (gameMode == 1) {
+  } else if (gameState == 1) {
     if (gravity == "top") {
       rotation = "vertical";
       getFirst(player).y += 1;
@@ -798,7 +800,7 @@ onInput("s", () => {
 
 // Tile interaction checks
 afterInput(() => {
-  if (gameMode == 1) {
+  if (gameState == 1) {
     let playerCoord = getFirst(player);
     let surroundingTiles = [
       getTile(playerCoord.x, playerCoord.y + 1)[0], // Tile below player
@@ -812,8 +814,13 @@ afterInput(() => {
 
     if (flagFound) {
       playTune(finishSFX, 1);
-      level++;
-      spawn();
+      if (levels.length - 1 == level) {
+        mainMenu();
+        return;
+      } else {
+        level++;
+        spawn();
+      }
     }
   }
 });
@@ -823,12 +830,12 @@ afterInput(() => {
 function mainMenu() {
   pointerX = 2;
   pointerY = 6;
-  gameMode = 0;
+  gameState = 0;
   modeZero = 1;
   handleGameIntervals();
   clearText();
   setTextures();
-  level = 0;
+  level = 1;
   setMap(levels[level]);
   setBackground(background);
   // Text
@@ -845,12 +852,12 @@ function mainMenu() {
 }
 
 function guideMenu() {
-  gameMode = 0;
+  gameState = 0;
   modeZero = 2;
   handleGameIntervals();
   clearText();
   setTextures();
-  level = 1;
+  level = 0;
   setMap(levels[level]);
   setBackground(background);
 
@@ -875,12 +882,24 @@ function pointerChange() {
     currentPointer = getTile(pointerX, pointerY)[0].type;
   } else if (modeZero == 2) {
     // Highlight selected
-    if (currentPointer == 0) {
+    if (pointerOption == 0) {
       updateGlyph();
-    } else if (currentPointer == 1) {
+    } else if (pointerOption == 1) {
       updateGlyph(buttonW);
-    } else if (currentPointer == 2) {
+    } else if (pointerOption == 2) {
+      updateGlyph(buttonD);
+    } else if (pointerOption == 3) {
+      updateGlyph(buttonS);
+    } else if (pointerOption == 4) {
       updateGlyph(buttonA);
+    } else if (pointerOption == 5) {
+      updateGlyph(buttonI);
+    } else if (pointerOption == 6) {
+      updateGlyph(buttonL);
+    } else if (pointerOption == 7) {
+      updateGlyph(buttonK);
+    } else if (pointerOption == 8) {
+      updateGlyph(buttonJ);
     }
     // Change back button color
     if (pointerOption == 0) {
@@ -933,6 +952,17 @@ function pointerUp() {
   }
 }
 
+function pointerBack() {
+  if (modeZero == 2) {
+    if (pointerOption != 0) {
+      pointerOption = 0;
+      pointerChange();
+    } else {
+      playTune(errorSFX);
+    }
+  }
+}
+
 function pointerContinue() {
   if (modeZero == 1) {
     // Main Menu
@@ -949,28 +979,37 @@ function pointerContinue() {
     if (pointerOption == 0) {
       pointerOption = 0; // Return to first option
       mainMenu();
-    } else if (pointerOption == 1) {
-      
-    }
+    } else if (pointerOption == 1) {}
   }
 }
 
-function updateGlyphs(a) {
-  console.log(arguments[0])
-  if (gameMode == gameMode) {
-    console.log("Active button detected")
-    buttonCoord = getFirst(activeButton)
-    console.log(buttonCoord)
-    if (buttonCoord.length == 0) {
-      addSprite(buttonCoord.x, buttonCoord.y, buttonActive)
-    } else {
-      buttonActive.remove()
-      addSprite(buttonCoord.x, buttonCoord.y, buttonActive)
+function updateGlyph(activeButton) {
+  console.log(buttonActive);
+  let buttonCoord = getFirst(activeButton); // Store the value of buttonCoord in a separate variable
+  if (pointerOption == 0) {
+    if (buttonActive !== "g") {
+      buttonActive = "g";
     }
+  } else if (pointerOption == 1) {
+    // Check if buttonActive is undefined before removing
+    addSprite(buttonCoord.x, buttonCoord.y, buttonActive);
+    buttonActive = activeButton;
   } else {
-    buttonActive.remove()
+    getFirst(buttonActive).remove;
+    addSprite(buttonCoord.x, buttonCoord.y, buttonActive);
+    buttonActive = activeButton;
   }
 }
+
+//function updateGlyph(activeButton) {
+//    clearTile(buttonCoord.x, buttonCoord.y); // Clear the previous buttonActive sprite
+//
+//    if (activeButton !== undefined) {
+//        buttonCoord = getFirst(activeButton);
+//        addSprite(buttonCoord.x, buttonCoord.y, buttonActive); // Add the active state to the new button
+//    }
+//    buttonActive = buttonCoord;
+//}
 ////////////////////////////
 // Game Logic
 
@@ -1029,13 +1068,13 @@ function initializeGame() {
 //Spawn Code
 function spawn() {
   clearText(); // Cleans stuff before it
-  mapCheck();
-  characterInit();
   setMap(levels[level]);
+  mapCheck();
   spawnFind();
-  addSprite(spawnX, spawnY, player);
-  gameMode = 1;
+  gameState = 1;
+  characterInit();
   handleGameIntervals();
+  addSprite(spawnX, spawnY, player);
 }
 
 // Reset Code
@@ -1051,7 +1090,7 @@ function reset() {
     y: 7,
     color: color`2`,
   });
-  gameMode = 2;
+  gameState = 2;
   handleGameIntervals();
   getFirst(player).remove();
   setTimeout(() => spawn(), 3000);
@@ -1161,10 +1200,11 @@ function characterInit() {
 
 // Texture Update Code
 function setTextures() {
-  if (gameMode == 0) {
+  if (gameState == 0) {
     // Main Menu or Guide Menu check
     if (modeZero == 1) {
       setLegend(
+        [player, currentPlayer],
         [arrow, arrowTexture],
         [background, backgroundTexture],
         [textBackground, textBackgroundTexture],
@@ -1183,6 +1223,7 @@ function setTextures() {
         [buttonJ, buttonJTexture],
         [buttonK, buttonKTexture],
         [buttonL, buttonLTexture],
+        [buttonActive, buttonActiveTexture],
       );
     } else if (modeZero == 2) {
       setLegend(
@@ -1206,7 +1247,7 @@ function setTextures() {
         [buttonActive, buttonActiveTexture],
       );
     }
-  } else if (gameMode == 1) {
+  } else if (gameState == 1) {
     setLegend(
       [player, currentPlayer],
       [arrow, arrowTexture],
@@ -1224,23 +1265,24 @@ function setTextures() {
 }
 
 function handleGameIntervals() {
-  if (gameMode == 1) {
+  if (gameState == 1) {
     // Clear any existing intervals
     clearInterval(pointerChangeInterval);
     clearInterval(blockDetectionInterval);
     clearInterval(gravityLoopInterval);
     clearInterval(jumpLoopInterval);
 
-    // Set new intervals
-    blockDetectionInterval = setInterval(gravityBlockDetection, 500);
-    gravityLoopInterval = setInterval(gravityPull, 300);
-    jumpLoopInterval = setInterval(jumpPull, 100);
-  } else if (gameMode == 0) {
+    blockDetectionInterval = setInterval(gravityBlockDetection, 500); // Set interval for gravity block detection
+    gravityLoopInterval = setInterval(gravityPull, 300); // Set interval for gravity calculation
+    jumpLoopInterval = setInterval(jumpPull, 100); // Set interval for jump calculation
+  } else if (gameState == 0) {
     // Clear any existing intervals
     clearInterval(pointerChangeInterval);
+    clearInterval(blockDetectionInterval);
+    clearInterval(gravityLoopInterval);
+    clearInterval(jumpLoopInterval);
 
-    // Set interval for pointer texture swap
-    pointerChangeInterval = setInterval(pointerChange, 1000);
+    pointerChangeInterval = setInterval(pointerChange, 1000); // Set interval for pointer texture swap
   } else {
     // Clear intervals if game is not active
     clearInterval(pointerChangeInterval);
