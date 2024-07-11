@@ -26,6 +26,7 @@ const buttonK = "k";
 const buttonJ = "j";
 const buttonL = "l";
 let buttonActive = "g";
+let blockActive = "h"
 
 let isMoving = 0;
 let jumpHeight = 0;
@@ -33,6 +34,7 @@ let lastClickTime = 0;
 let currentPointer = "";
 let pointerX = 2;
 let pointerY = 6;
+let optionCoord;
 let playerCoord;
 let belowTile;
 let lowerTile;
@@ -43,24 +45,7 @@ let jumpLoopInterval;
 
 // Resources
 // Active Textures
-const buttonActiveTexture = bitmap`
-................
-................
-................
-.....222222.....
-....2......2....
-...2........2...
-...2........2...
-...2........2...
-...2........2...
-...2........2...
-...2........2...
-....2......2....
-.....222222.....
-................
-................
-................`;
-const buttonWTexture = bitmap`
+const buttonWGlyph = bitmap`
 ................
 .......22.......
 ......2222......
@@ -77,7 +62,7 @@ const buttonWTexture = bitmap`
 ................
 ................
 ................`;
-const buttonATexture = bitmap`
+const buttonAGlyph = bitmap`
 ................
 ................
 ................
@@ -94,7 +79,7 @@ const buttonATexture = bitmap`
 ......2222......
 .......22.......
 ................`;
-const buttonSTexture = bitmap`
+const buttonSGlyph = bitmap`
 ................
 ................
 ................
@@ -111,7 +96,7 @@ const buttonSTexture = bitmap`
 ................
 ................
 ................`;
-const buttonDTexture = bitmap`
+const buttonDGlyph = bitmap`
 ................
 ................
 ................
@@ -128,7 +113,7 @@ const buttonDTexture = bitmap`
 ................
 ................
 ................`;
-const buttonITexture = bitmap`
+const buttonIGlyph = bitmap`
 ................
 .......22.......
 ......2222......
@@ -145,7 +130,7 @@ const buttonITexture = bitmap`
 ................
 ................
 ................`;
-const buttonJTexture = bitmap`
+const buttonJGlyph = bitmap`
 ................
 ................
 ................
@@ -162,7 +147,7 @@ const buttonJTexture = bitmap`
 ................
 ................
 ................`;
-const buttonKTexture = bitmap`
+const buttonKGlyph = bitmap`
 ................
 ................
 ................
@@ -179,7 +164,7 @@ const buttonKTexture = bitmap`
 ......2222......
 .......22.......
 ................`;
-const buttonLTexture = bitmap`
+const buttonLGlyph = bitmap`
 ................
 ................
 ................
@@ -198,7 +183,7 @@ const buttonLTexture = bitmap`
 ................`;
 
 // Inactive Textures
-const buttonWInactiveTexture = bitmap`
+const buttonWInactiveGlyph = bitmap`
 ................
 .......11.......
 ......1111......
@@ -215,7 +200,7 @@ const buttonWInactiveTexture = bitmap`
 ................
 ................
 ................`;
-const buttonAInactiveTexture = bitmap`
+const buttonAInactiveGlyph = bitmap`
 ................
 ................
 ................
@@ -232,7 +217,7 @@ const buttonAInactiveTexture = bitmap`
 ................
 ................
 ................`;
-const buttonSInactiveTexture = bitmap`
+const buttonSInactiveGlyph = bitmap`
 ................
 ................
 ................
@@ -249,7 +234,7 @@ const buttonSInactiveTexture = bitmap`
 ......1111......
 .......11.......
 ................`;
-const buttonDInactiveTexture = bitmap`
+const buttonDInactiveGlyph = bitmap`
 ................
 ................
 ................
@@ -266,7 +251,7 @@ const buttonDInactiveTexture = bitmap`
 ................
 ................
 ................`;
-const buttonIInactiveTexture = bitmap`
+const buttonIInactiveGlyph = bitmap`
 ................
 .......11.......
 ......1111......
@@ -283,7 +268,7 @@ const buttonIInactiveTexture = bitmap`
 ................
 ................
 ................`;
-const buttonJInactiveTexture = bitmap`
+const buttonJInactiveGlyph = bitmap`
 ................
 ................
 ................
@@ -300,7 +285,7 @@ const buttonJInactiveTexture = bitmap`
 ................
 ................
 ................`;
-const buttonKInactiveTexture = bitmap`
+const buttonKInactiveGlyph = bitmap`
 ................
 ................
 ................
@@ -317,7 +302,7 @@ const buttonKInactiveTexture = bitmap`
 ......1111......
 .......11.......
 ................`;
-const buttonLInactiveTexture = bitmap`
+const buttonLInactiveGlyph = bitmap`
 ................
 ................
 ................
@@ -330,6 +315,42 @@ const buttonLInactiveTexture = bitmap`
 ....11011011.1..
 ....11011011....
 .....111111.....
+................
+................
+................
+................`;
+
+// Highlight
+const buttonHighlightTexture = bitmap`
+................
+................
+................
+.....222222.....
+....2......2....
+...2........2...
+...2........2...
+...2........2...
+...2........2...
+...2........2...
+...2........2...
+....2......2....
+.....222222.....
+................
+................
+................`;
+const blockHighlightTexture = bitmap`
+2222222222222222
+................
+................
+................
+................
+................
+................
+................
+................
+................
+................
+................
 ................
 ................
 ................
@@ -583,8 +604,8 @@ const levels = [
 ...w.......i...
 ..a.d.....j.l..
 ...s.......k...
-...............
-...............
+..........o..n.
+.p..b..v..c..m.
 ...............
 ...............
 ...............
@@ -719,7 +740,7 @@ let deathText = `You died!`;
 // Game Default States
 // Do not move this up, currentPlayer requires the texture from above
 let gameState = 0; // 0 for Main Menu; 1 for In-game; 2 for Death
-let modeZero = 1; // 1 for Main Menu; 2 for Guide
+let menuMode = 1; // 1 for Main Menu; 2 for Guide
 let pointerOption = 0;
 let backButtonState = "2"; // 1 is Gray (unselected); 2 is White (selected)
 let level = 1; // 0 for Guide Menu; 1 for Main Menu; The rest are game maps
@@ -831,13 +852,14 @@ function mainMenu() {
   pointerX = 2;
   pointerY = 6;
   gameState = 0;
-  modeZero = 1;
+  menuMode = 1;
   handleGameIntervals();
   clearText();
   setTextures();
   level = 1;
   setMap(levels[level]);
   setBackground(background);
+  pointerChange(); // Trigger pointer spawning in advance (Rather than wait for interval)
   // Text
   addText(mainMenuTitle, {
     x: 4,
@@ -853,10 +875,10 @@ function mainMenu() {
 
 function guideMenu() {
   gameState = 0;
-  modeZero = 2;
+  menuMode = 2;
   handleGameIntervals();
   clearText();
-  setTextures();
+  characterInit();
   level = 0;
   setMap(levels[level]);
   setBackground(background);
@@ -869,8 +891,9 @@ function guideMenu() {
   });
 }
 
+// Handles pointer blinking and spawning
 function pointerChange() {
-  if (modeZero == 1) {
+  if (menuMode == 1) {
     // Point to selected
     if (currentPointer == arrow) {
       clearTile(pointerX, pointerY);
@@ -880,26 +903,39 @@ function pointerChange() {
       addSprite(pointerX, pointerY, arrow);
     }
     currentPointer = getTile(pointerX, pointerY)[0].type;
-  } else if (modeZero == 2) {
-    // Highlight selected
-    if (pointerOption == 0) {
+  }
+}
+
+// Handles pointer selection in guide on-demand
+function pointerUpdate() {
+  if (pointerOption == 0) {
       updateGlyph();
     } else if (pointerOption == 1) {
       updateGlyph(buttonW);
     } else if (pointerOption == 2) {
-      updateGlyph(buttonD);
+      updateGlyph(buttonA);
     } else if (pointerOption == 3) {
       updateGlyph(buttonS);
     } else if (pointerOption == 4) {
-      updateGlyph(buttonA);
+      updateGlyph(buttonD);
     } else if (pointerOption == 5) {
       updateGlyph(buttonI);
     } else if (pointerOption == 6) {
-      updateGlyph(buttonL);
+      updateGlyph(buttonJ);
     } else if (pointerOption == 7) {
       updateGlyph(buttonK);
     } else if (pointerOption == 8) {
-      updateGlyph(buttonJ);
+      updateGlyph(buttonL);
+    } else if (pointerOption == 9) {
+      updateGlyph(player);
+    } else if (pointerOption == 10) {
+      updateGlyph(block);
+    } else if (pointerOption == 11) {
+      updateGlyph(magicBlock);
+    } else if (pointerOption == 12) {
+      updateGlyph(flagUp);
+    } else if (pointerOption == 13) {
+      updateGlyph(gravityBlockDown);
     }
     // Change back button color
     if (pointerOption == 0) {
@@ -908,12 +944,12 @@ function pointerChange() {
     } else {
       backButtonState = color`1`;
       guideMenu();
-    }
   }
 }
 
+// Handles pointer movement (downwards)
 function pointerDown() {
-  if (modeZero == 1) {
+  if (menuMode == 1) {
     if (pointerOption == 0) {
       clearTile(pointerX, pointerY);
       pointerY += 2;
@@ -922,18 +958,19 @@ function pointerDown() {
     } else {
       playTune(errorSFX);
     }
-  } else if (modeZero == 2) {
-    if (pointerOption < 17) {
+  } else if (menuMode == 2) {
+    if (pointerOption < 13) {
       pointerOption++;
-      pointerChange();
+      pointerUpdate();
     } else {
       playTune(errorSFX);
     }
   }
 }
 
+// Handles pointer movement (upwards)
 function pointerUp() {
-  if (modeZero == 1) {
+  if (menuMode == 1) {
     if (pointerOption == 1) {
       clearTile(pointerX, pointerY);
       pointerY -= 2;
@@ -942,29 +979,40 @@ function pointerUp() {
     } else {
       playTune(errorSFX);
     }
-  } else if (modeZero == 2) {
+  } else if (menuMode == 2) {
     if (pointerOption > 0) {
       pointerOption--;
-      pointerChange();
+      pointerUpdate();
     } else {
       playTune(errorSFX);
     }
   }
 }
 
+// Allows pointer to jump back to the first option
 function pointerBack() {
-  if (modeZero == 2) {
-    if (pointerOption != 0) {
+  if (menuMode == 1) {
+    if (pointerOption == 1) {
+      clearTile(pointerX, pointerY);
+      pointerY -= 2;
       pointerOption = 0;
       pointerChange();
     } else {
       playTune(errorSFX);
     }
+  } else if (menuMode == 2) {
+    if (pointerOption > 0) {
+      pointerOption = 0;
+      pointerUpdate();
+    } else {
+      playTune(errorSFX);
+    }
   }
 }
 
+// Handles pointer selection and runs/displays them accordingly
 function pointerContinue() {
-  if (modeZero == 1) {
+  if (menuMode == 1) {
     // Main Menu
     if (pointerOption == 0) {
       // Start the Game
@@ -974,7 +1022,7 @@ function pointerContinue() {
       pointerOption = 0; // Return to first option
       guideMenu();
     }
-  } else if (modeZero == 2) {
+  } else if (menuMode == 2) {
     // Guide Menu
     if (pointerOption == 0) {
       pointerOption = 0; // Return to first option
@@ -983,34 +1031,34 @@ function pointerContinue() {
   }
 }
 
-function updateGlyph(activeButton) {
-  console.log(buttonActive);
-  let buttonCoord = getFirst(activeButton); // Store the value of buttonCoord in a separate variable
-  if (pointerOption == 0) {
-    if (buttonActive !== "g") {
-      buttonActive = "g";
-    }
-  } else if (pointerOption == 1) {
-    // Check if buttonActive is undefined before removing
-    addSprite(buttonCoord.x, buttonCoord.y, buttonActive);
-    buttonActive = activeButton;
-  } else {
+// Update current selected item texture to highlight in the guid
+function updateGlyph(activeOption) {
+  if (buttonActive != "g") {
     getFirst(buttonActive).remove;
-    addSprite(buttonCoord.x, buttonCoord.y, buttonActive);
-    buttonActive = activeButton;
+  } else if (getFirst(blockActive) !== undefined) {
+    getFirst(blockActive).remove;
+  }
+  if (pointerOption == 0) {
+    buttonActive = "g"; // Reset buttonActive and activeOption when switching from buttons to back
+  } else if (pointerOption == 1) {
+    optionCoord = getFirst(activeOption);
+    addSprite(optionCoord.x, optionCoord.y, buttonActive);
+    buttonActive = activeOption;
+  } else if (pointerOption < 9) {
+    optionCoord = getFirst(activeOption);
+    addSprite(optionCoord.x, optionCoord.y, buttonActive);
+    buttonActive = activeOption;
+  } else if (pointerOption > 8) {
+    buttonActive = "g"; // Reset buttonActive and activeOption textures
+    optionCoord = getFirst(activeOption);
+    let highlightCoord = getTile(optionCoord.x, optionCoord.y - 1);
+    console.log(highlightCoord)
+    console.log("coords")
+    console.log(getFirst(activeOption))
+    addSprite(highlightCoord.x, highlightCoord.y, blockActive);
   }
 }
 
-//function updateGlyph(activeButton) {
-//    clearTile(buttonCoord.x, buttonCoord.y); // Clear the previous buttonActive sprite
-//
-//    if (activeButton !== undefined) {
-//        buttonCoord = getFirst(activeButton);
-//        addSprite(buttonCoord.x, buttonCoord.y, buttonActive); // Add the active state to the new button
-//    }
-//    buttonActive = buttonCoord;
-//}
-////////////////////////////
 // Game Logic
 
 // Special Map Check
@@ -1111,9 +1159,9 @@ function jumpUp() {
     (lowerTile.length != 0 && belowTile.length == 0 && gravity != "top")
   ) {
     if (gravity == "down") {
-      jumpHeight += 1;
+      jumpHeight++;
     } else if (gravity == "up") {
-      jumpHeight -= 1;
+      jumpHeight--;
     }
     playTune(jumpSFX);
   }
@@ -1202,7 +1250,7 @@ function characterInit() {
 function setTextures() {
   if (gameState == 0) {
     // Main Menu or Guide Menu check
-    if (modeZero == 1) {
+    if (menuMode == 1) {
       setLegend(
         [player, currentPlayer],
         [arrow, arrowTexture],
@@ -1215,17 +1263,16 @@ function setTextures() {
         [flagUp, flagUpTexture],
         [gravityBlockDown, gravityBlockDownTexture],
         [gravityBlockUp, gravityBlockUpTexture],
-        [buttonW, buttonWTexture],
-        [buttonA, buttonATexture],
-        [buttonS, buttonSTexture],
-        [buttonD, buttonDTexture],
-        [buttonI, buttonITexture],
-        [buttonJ, buttonJTexture],
-        [buttonK, buttonKTexture],
-        [buttonL, buttonLTexture],
-        [buttonActive, buttonActiveTexture],
+        [buttonW, buttonWGlyph],
+        [buttonA, buttonAGlyph],
+        [buttonS, buttonSGlyph],
+        [buttonD, buttonDGlyph],
+        [buttonI, buttonIGlyph],
+        [buttonJ, buttonJGlyph],
+        [buttonK, buttonKGlyph],
+        [buttonL, buttonLGlyph],
       );
-    } else if (modeZero == 2) {
+    } else if (menuMode == 2) {
       setLegend(
         [player, currentPlayer],
         [arrow, arrowTexture],
@@ -1236,15 +1283,16 @@ function setTextures() {
         [flagUp, flagUpTexture],
         [gravityBlockDown, gravityBlockDownTexture],
         [gravityBlockUp, gravityBlockUpTexture],
-        [buttonW, buttonWInactiveTexture],
-        [buttonA, buttonAInactiveTexture],
-        [buttonS, buttonSInactiveTexture],
-        [buttonD, buttonDInactiveTexture],
-        [buttonI, buttonIInactiveTexture],
-        [buttonJ, buttonJInactiveTexture],
-        [buttonK, buttonKInactiveTexture],
-        [buttonL, buttonLInactiveTexture],
-        [buttonActive, buttonActiveTexture],
+        [buttonW, buttonWInactiveGlyph],
+        [buttonA, buttonAInactiveGlyph],
+        [buttonS, buttonSInactiveGlyph],
+        [buttonD, buttonDInactiveGlyph],
+        [buttonI, buttonIInactiveGlyph],
+        [buttonJ, buttonJInactiveGlyph],
+        [buttonK, buttonKInactiveGlyph],
+        [buttonL, buttonLInactiveGlyph],
+        [buttonActive, buttonHighlightTexture],
+        [blockActive, blockHighlightTexture],
       );
     }
   } else if (gameState == 1) {
