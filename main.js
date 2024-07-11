@@ -9,6 +9,7 @@ const player = "p";
 const background = "z";
 const textBackground = "y";
 const leftTextBackground = "x";
+const rightTextBackground = "r";
 const arrow = "q";
 const block = "b";
 const magicBlock = "v";
@@ -28,8 +29,8 @@ const buttonL = "l";
 const blockActive = "h";
 let buttonActive = "g";
 
-let isMoving = 0;
-let jumpHeight = 0;
+let isMoving = 0; // Check gravityPull()
+let jumpHeight = 0; // Check jumpUp()
 let lastClickTime = 0;
 let currentPointer = "";
 let highlightCoord;
@@ -39,6 +40,8 @@ let optionCoord;
 let playerCoord;
 let belowTile;
 let lowerTile;
+
+// Explained at updateGameIntervals()
 let pointerChangeInterval;
 let flagDetectionInterval;
 let blockDetectionInterval;
@@ -328,14 +331,14 @@ const buttonHighlightTexture = bitmap`
 ................
 ................
 .....222222.....
-....2......2....
-...2........2...
-...2........2...
-...2........2...
-...2........2...
-...2........2...
-...2........2...
-....2......2....
+....21111112....
+...2111111112...
+...2111111112...
+...2111212112...
+...2112121112...
+...2111111112...
+...2111111112...
+....21111112....
 .....222222.....
 ................
 ................
@@ -495,6 +498,23 @@ const leftTextBackgroundTexture = bitmap`
 .......LLLLLLLLL
 .......LLLLLLLLL
 .......LLLLLLLLL`;
+const rightTextBackgroundTexture = bitmap`
+................
+333333333.......
+3LLL3LL33.......
+LLLL3LLL3.......
+LLLLLLLLL.......
+LLLLLLLLL.......
+LLLLLLLLL.......
+LLLLLLLLL.......
+LLLLLLLLL.......
+LLLLLLLLL.......
+LLLLLLLLL.......
+LLLLLLLLL.......
+LLLLLLLLL.......
+LLLLLLLLL.......
+LLLLLLLLL.......
+LLLLLLLLL.......`;
 const magicBlockTexture = bitmap`
 LLLLLLLLLLLLLLLL
 L00LLLLLLLLLLLLL
@@ -611,7 +631,7 @@ const levels = [
 ...............
 .....l.........
 ...............
-...............`,
+...............`, // Guide
   map`
 b.vvvvvvvvvvv.b
 m.vn.......mv.m
@@ -624,7 +644,7 @@ m.vn.......mv.m
 ...............
 ...........b...
 n.bb.b.b.bb...o
-b.............b`,
+b.............b`, // Main Menu
   map`
 ...............
 ...............
@@ -664,8 +684,24 @@ b....b.b......b
 bbbb.b.bb.bbb.b
 b....b....b...b
 bbbbbbbbbbbbbbb`,
+  map`
+bbbbbbbbbbbbbbb
+.n...........m.
+...............
+...............
+.n...........m.
+...............
+...............
+.n...........m.
+...............
+...............
+.n...........m.
+bbbbbbbbbbbbbbb`, // Finish Screen
 ];
 
+const menuSFX = tune`
+500: D4^500,
+15500`;
 const errorSFX = tune`
 150: D4^150 + C4/150,
 150: C4~150,
@@ -694,6 +730,39 @@ const finishSFX = tune`
 240: B5~240,
 240: A5~240,
 6960`;
+const completeSFX = tune`
+150: G4~150,
+150: G4~150,
+150: A4~150,
+150: A4~150,
+150: D5~150,
+150: D5~150,
+150,
+150: F5^150,
+150: E5^150,
+150: F5^150,
+150: E5^150,
+150,
+150: D5~150,
+150,
+150: D5~150,
+150,
+150: D5~150,
+150,
+150: C5~150,
+150: E5~150,
+150: C5~150,
+150: D5~150,
+150,
+150: A4/150,
+150: A4/150,
+150: D5/150,
+150: D5/150,
+150: G5/150,
+150: G5/150,
+150,
+150: G5-150,
+150: G5-150`;
 
 // Texts (Looks more clean here)
 let mainMenuTitle = `
@@ -733,7 +802,16 @@ Error: Couldn't
 find empty tile
 for player spawn`;
 
-let deathText = `You died!`;
+let deathText = `You died`;
+
+let finishText = `
+You completed
+  the game!
+
+
+  
+ Thanks for
+  playing!`;
 
 // Guide Texts
 let menuGuide = `Press   
@@ -751,7 +829,8 @@ Top-down mode`;
 let rightLGuide = `Moves player to 
 the right`;
 let upRGuide = `Makes player jump`;
-let leftRGuide = `...`;
+let leftRGuide = `Returns to menu
+(Progress is saved)`;
 let downRGuide = `Makes player jump,
 also acts as a
 back button in
@@ -765,7 +844,7 @@ good for standing
 on`;
 let magicBlockGuide = `???`;
 let flagGuide = `Get near it
-and you finish
+and you complete
 the level`;
 let gravityBlockGuide = `Stand on this
 block and watch
@@ -778,7 +857,8 @@ let gameState = 0; // 0 for Main Menu; 1 for In-game; 2 for Death
 let menuMode = 1; // 1 for Main Menu; 2 for Guide
 let pointerOption = 0;
 let backButtonState = "2"; // 1 is Gray (unselected); 2 is White (selected)
-let level = 1; // 0 for Guide Menu; 1 for Main Menu; The rest are game maps
+let level = 1; // 0 for Guide; 1 for Main Menu; Last map for Finish screen; The in between are the game maps
+let lastLevel = 1; // Tracks level before mainMenu to allow accessing the main menu whilst in game
 let spawnX = 0; // Automatic
 let spawnY = 0; // Automatic
 let spawnHeight = 0;
@@ -802,6 +882,13 @@ onInput("k", () => {
 onInput("i", () => {
   if (gameState == 1) {
     jumpUp();
+  }
+});
+
+onInput("j", () => {
+  if (gameState == 1 && level != levels.length - 1) {
+    // Make sure no one opens the menu during end
+    mainMenu();
   }
 });
 
@@ -864,13 +951,20 @@ afterInput(() => {
   if (gameState == 1) {}
 });
 
-/// Main Menu Code
+/// Menu Code
+// Sets up the main menu
 function mainMenu() {
   pointerX = 2;
   pointerY = 6;
   gameState = 0;
   menuMode = 1;
-  handleGameIntervals();
+  pointerOption = 0;
+  updateGameIntervals();
+  if (level > 1 && level < levels.length - 1) {
+    lastLevel = level; // Remember last level before mainMenu (if Applicable)
+  } else {
+    lastLevel = 1;
+  }
   clearText();
   setTextures();
   level = 1;
@@ -890,10 +984,11 @@ function mainMenu() {
   });
 }
 
-function guideMenu() {
+// Sets up the guide
+function guideScreen() {
   gameState = 0;
   menuMode = 2;
-  handleGameIntervals();
+  updateGameIntervals();
   clearText();
   setTextures();
   level = 0;
@@ -980,6 +1075,7 @@ function pointerDown() {
       pointerY += 2;
       pointerOption++;
       pointerChange();
+      playTune(menuSFX);
     } else {
       playTune(errorSFX);
     }
@@ -987,6 +1083,7 @@ function pointerDown() {
     if (pointerOption < 13) {
       pointerOption++;
       pointerUpdate();
+      playTune(menuSFX);
     } else {
       playTune(errorSFX);
     }
@@ -1001,6 +1098,7 @@ function pointerUp() {
       pointerY -= 2;
       pointerOption--;
       pointerChange();
+      playTune(menuSFX);
     } else {
       playTune(errorSFX);
     }
@@ -1008,6 +1106,7 @@ function pointerUp() {
     if (pointerOption > 0) {
       pointerOption--;
       pointerUpdate();
+      playTune(menuSFX);
     } else {
       playTune(errorSFX);
     }
@@ -1048,10 +1147,10 @@ function pointerContinue(triggered) {
     } else if (pointerOption == 1) {
       // Go to Guide
       pointerOption = 0; // Return to first option
-      guideMenu();
+      guideScreen();
     }
   } else if (menuMode == 2) {
-    // Guide Menu
+    // Guide
     if (triggered == "k") {
       // Check if triggered by back button
       if (pointerOption == 0) {
@@ -1149,12 +1248,13 @@ function initializeGame() {
   setTextures();
   setSolids([player, block]);
   setBackground(background);
+  level = lastLevel; // Restore lastLevel if applicable
   setMap(levels[level]);
 
   spawn(); // Start Game
 }
 
-//Spawn Code
+// Spawn Code
 function spawn() {
   clearText(); // Cleans stuff before it
   setMap(levels[level]);
@@ -1162,7 +1262,7 @@ function spawn() {
   spawnFind();
   gameState = 1;
   characterInit();
-  handleGameIntervals();
+  updateGameIntervals();
   addSprite(spawnX, spawnY, player);
 }
 
@@ -1170,7 +1270,8 @@ function spawn() {
 function reset() {
   playTune(deathSFX);
   addSprite(4, 5, leftTextBackground); // Makes the text centre
-  for (let i = 5; i <= 10; i++) {
+  addSprite(10, 5, rightTextBackground); // Makes the text centre
+  for (let i = 5; i <= 9; i++) {
     // Adds background to text to make it readable
     addSprite(i, 5, textBackground);
   }
@@ -1180,7 +1281,7 @@ function reset() {
     color: color`2`,
   });
   gameState = 2;
-  handleGameIntervals();
+  updateGameIntervals();
   getFirst(player).remove();
   setTimeout(() => spawn(), 3000);
 }
@@ -1227,6 +1328,7 @@ function spawnFind() {
 // Jump Code
 function jumpUp() {
   playerCoord = getFirst(player);
+  // Check for blocks below player (prevents infinite jumps) Replace if possible
   if (gravity == "down") {
     belowTile = getTile(playerCoord.x, playerCoord.y + 1);
     lowerTile = getTile(playerCoord.x, playerCoord.y + 2);
@@ -1249,6 +1351,7 @@ function jumpUp() {
 
 // Jump Velocity Code
 function jumpPull() {
+  // Increases player y postion whilst jumpHeight is not 0
   while (jumpHeight < 0) {
     getFirst(player).y++;
     jumpHeight++;
@@ -1276,13 +1379,17 @@ function gravityPull() {
   // Apply Gravity
   if (isMoving > 1) {
     if (gravity == "down" && downCollision == 0) {
+      // If gravity is down and there is no block below, lower the player y
       getFirst(player).y++;
       if (getFirst(player).y == height() - 1) {
+        // If player is at the bottom edge of the map, execute death function
         reset();
       }
     } else if (gravity == "up" && upCollision == 0) {
+      // If gravity is up and there is no block above, increase the player y
       getFirst(player).y--;
       if (getFirst(player).y == 0) {
+        // If player is at the top edge of the map, execute death function
         reset();
       }
     }
@@ -1296,7 +1403,7 @@ function gravityBlockDetection() {
     getTile(playerCoord.x, playerCoord.y + 1)[0],
     getTile(playerCoord.x, playerCoord.y - 1)[0],
   ];
-
+  // Check tiles above and below for gravity blocks
   if (verticalTiles.some((tile) => tile && tile.type == gravityBlockDown)) {
     playTune(gravityChangeSFX);
     gravity = "down";
@@ -1310,8 +1417,20 @@ function gravityBlockDetection() {
   }
 }
 
+// Loads the final map and displays finishText
+function gameComplete() {
+  level = levels.length - 1;
+  spawn();
+  playTune(completeSFX);
+  addText(finishText, { x: 4, y: 2, color: color`6` });
+  setTimeout(() => {
+    mainMenu();
+  }, 10000);
+}
+
 // Character Update Code
 function characterInit() {
+  // Checks for character gravity and applies the corresponding texture
   if (gravity == "down") {
     currentPlayer = playerDown;
   } else if (gravity == "up") {
@@ -1328,21 +1447,24 @@ function characterInit() {
 
 // Checks for a nearby flag and progress the level
 function flagDetection() {
-  let playerCoord = getFirst(player);
+  playerCoord = getFirst(player);
   let surroundingTiles = [
     getTile(playerCoord.x, playerCoord.y + 1)[0], // Tile below player
     getTile(playerCoord.x + 1, playerCoord.y)[0], // Tile to the right of player
     getTile(playerCoord.x - 1, playerCoord.y)[0], // Tile to the left of playerd
   ];
 
+  // Checks if surrounding tiles contain a flag and stores them
   let flagFound = surroundingTiles.some(
     (tile) => tile && (tile.type == flagDown || tile.type == flagUp),
   );
 
+  // If flagFound returns something, run
   if (flagFound) {
     playTune(finishSFX, 1);
-    if (levels.length - 1 == level) {
-      mainMenu();
+    if (levels.length - 2 == level) {
+      // Checks if game is complete and loads the end screen
+      gameComplete();
       return;
     } else {
       level++;
@@ -1353,8 +1475,9 @@ function flagDetection() {
 
 // Texture Update Code
 function setTextures() {
+  // This function loads the required textures for each gameState and menuMode
   if (gameState == 0) {
-    // Main Menu or Guide Menu check
+    // Main Menu or Guide check
     if (menuMode == 1) {
       setLegend(
         [player, currentPlayer],
@@ -1407,6 +1530,7 @@ function setTextures() {
       [background, backgroundTexture],
       [textBackground, textBackgroundTexture],
       [leftTextBackground, leftTextBackgroundTexture],
+      [rightTextBackground, rightTextBackgroundTexture],
       [block, blockTexture],
       [magicBlock, magicBlockTexture],
       [flagDown, flagDownTexture],
@@ -1417,7 +1541,8 @@ function setTextures() {
   }
 }
 
-function handleGameIntervals() {
+// Refreshes gameIntervals based on current gameState and menuMode
+function updateGameIntervals() {
   if (gameState == 1) {
     // Clear any existing intervals
     clearInterval(pointerChangeInterval);
@@ -1427,7 +1552,7 @@ function handleGameIntervals() {
     clearInterval(jumpLoopInterval);
 
     flagDetectionInterval = setInterval(flagDetection, 500); // Set interval for flag detection
-    blockDetectionInterval = setInterval(gravityBlockDetection, 500); // Set interval for gravity block detection
+    blockDetectionInterval = setInterval(gravityBlockDetection, 300); // Set interval for gravity block detection
     gravityLoopInterval = setInterval(gravityPull, 300); // Set interval for gravity calculation
     jumpLoopInterval = setInterval(jumpPull, 100); // Set interval for jump calculation
   } else if (gameState == 0) {
