@@ -45,6 +45,7 @@ let playerCoord;
 let belowTile; // Check jumpUp()
 let lowerTile; // Check jumpUp()
 let verticalTile; // Check gravityBlockDetection()
+let allBlocks; // Check displayBlocksInRange()
 
 // Explained at updateGameIntervals()
 let pointerChangeInterval;
@@ -673,7 +674,7 @@ b.............b`, // Main Menu
 ...............
 ..............o
 ............bbb
-..........b....
+.........bb....
 ...............
 ........b......
 .......b.......
@@ -682,18 +683,18 @@ b.............b`, // Main Menu
 bb.............
 ...............`,
   map`
-...b..b.....bbb
-...b..b.bb....c
-..bb..b........
-..mb..b........
-......m........
-...............
-...n...........
-...b...........
-...b..b........
-.n.bn.b........
-bb.bb.b........
-...b..b........`,
+....b...b.bbbbb
+....b...b.....c
+..b.b...m......
+..m.b..........
+....b..........
+....m..........
+........n......
+........b......
+........b......
+.n..n...b......
+bb..b.n.b......
+....b.b.b......`,
   map`
 bbbbbbbbbbbbbbb
 b.....tb......o
@@ -720,6 +721,87 @@ bbb............
 ...............
 ..............o
 ............bbb`,
+  map`
+...............
+..............o
+.bbb..bb.bb.bbb
+...............
+b..............
+bb..bb..bb.....
+...........bbb.
+...............
+..............b
+.............bb
+...........b...
+bbbbbbbbbb.....`,
+  map`
+bbbbbbbbbbbbbbb
+t.............b
+bbbbb.bbbb.bbbb
+b.b...b..b....b
+b...bbbb.b.bb.b
+bb.bbb.b.b.b..b
+b..b.b...bbb.bb
+b.bb.b.b...b..b
+b......b.bbbbbb
+b.bbb.bb..b...b
+b.b....b....b.o
+bbbbbbbbbbbbbbb`,
+  map`
+...............
+.....b.......o.
+........b..bbb.
+...b...........
+..............b
+.bbbbb..b..b.bb
+...............
+b..............
+bbb..bb..b..bb.
+...............
+..............b
+bb..b..b..b..bb`,
+  map`
+bbbbbbbbbbbbbbb
+mmm............
+..............o
+.bbb.b.b.bb.bbb
+.b..........mmm
+n..............
+bb.b.b..b.b....
+............bb.
+.............b.
+.............b.
+...b....b..b..n
+bb....b....bbbb`,
+  map`
+bbbbbbbbbbbbbbbbbbb
+b............b....b
+b.bb.bb.bbb.bb.bb.b
+b.b...b.....b.....b
+bbb.b...bbb...bbbbb
+b...bb.......bb...b
+bbb.b..bb.bb..b.bbb
+ob..b.bb.t.bb.b...o
+bbb.b..bb.bb..b.bbb
+b...bb....b..bb...b
+bbbbb...bbb.b.b.bbb
+b.....b.....b.....b
+b.bb.bbbbbb.bb.bb.b
+b.......b.........b
+bbbbbbbbbbbbbbbbbbb`,
+  map`
+bbbbbbbbbbbbbbb
+b..b.......b..b
+bo.v.......b.ob
+bbbbbb...bbbbbb
+.......b.......
+...............
+....b..b..b....
+.b....bbb....b.
+...............
+b.............b
+..b.b..p..b.b..
+....bbbbbbb....`,
   map`
 bbbbbbbbbbbbbbb
 .n...........m.
@@ -826,8 +908,8 @@ to get higher
 `;
 
 let tutorial2 = `
-Jump on 
-top of the 
+Get on 
+top the
 Gravity 
 Block to
 activate`;
@@ -867,11 +949,12 @@ let upRGuide = `Makes player jump`;
 let leftRGuide = `Returns to menu
 (Progress is saved)`;
 let downRGuide = `Makes player jump,
-also acts as a
+also acts as the
 back button in
 the menu`;
 let rightRGuide = `Confirm menu
-selection`;
+selection, also 
+acts as level skip`;
 // Blocks
 let playerGuide = `It's you!`;
 let blockGuide = `A solid platform,
@@ -978,7 +1061,17 @@ onInput("j", () => {
 onInput("l", () => {
   if (gameState == 0) {
     pointerContinue();
+  } else if (gameState == 1) {
+    if (level > 0 && level < levels.length - 2) {
+      nextLevel();
+    } else {
+      pingError = true;
+    }
   }
+});
+
+afterInput(() => {
+  displayBlocksInRange();
 });
 
 /// Menu Code
@@ -1271,7 +1364,7 @@ function mapCheck() {
   if (level == 2) {
     addText(tutorial1, { x: 1, y: 0, color: color`1` });
   } else if (level == 3) {
-    addText(tutorial2, { x: 10, y: 8, color: color`1` });
+    addText(tutorial2, { x: 12, y: 10, color: color`1` });
   }
 }
 
@@ -1290,12 +1383,14 @@ function initializeGame() {
 function spawn() {
   clearText(); // Cleans stuff before it
   setMap(levels[level]);
+  allBlocks = getAll(block); // Used for displayBlocksInRange()
   mapCheck();
   spawnFind();
   gameState = 1;
   characterInit();
   updateGameIntervals();
   addSprite(spawnX, spawnY, player);
+  displayBlocksInRange();
 }
 
 // Reset Code
@@ -1351,7 +1446,7 @@ function spawnFind() {
     spawnX = 0;
     spawnY = spawnHeight;
     while (spawnHeight == height() - 1) {
-      for (spawnY >= 0; spawnY--;) {
+      for (spawnY >= 0; spawnY--; ) {
         // Scan from bottom to top
         if (
           getTile(spawnX, spawnY).length == 0 &&
@@ -1480,21 +1575,43 @@ function gravityBlockDetection() {
   }
 }
 
-// Character Update Code
-function characterInit() {
-  // Checks for character gravity and applies the corresponding texture
-  if (gravity == "down") {
-    currentPlayer = playerDown;
-  } else if (gravity == "up") {
-    currentPlayer = playerUp;
-  } else if (gravity == "top") {
-    if (rotation == "vertical") {
-      currentPlayer = playerTop;
-    } else if (rotation == "horizontal") {
-      currentPlayer = playerTopSide;
+function displayBlocksInRange() {
+  if (gravity == "top") {
+    // Get the player's coordinates
+    playerCoord = getFirst(player);
+    let playerX = playerCoord.x;
+    let playerY = playerCoord.y;
+
+    // Define the range around the player (5 grids in each direction)
+    const range = 3;
+
+    for (let blockSprite of allBlocks) {
+      let blockX = blockSprite.x;
+      let blockY = blockSprite.y;
+      addSprite(blockX, blockY, block);
+    }
+
+    for (let blockSprite of allBlocks) {
+      let blockX = blockSprite.x;
+      let blockY = blockSprite.y;
+
+      // Calculate the distance between the block and the player
+      const distance = Math.abs(blockX - playerX) + Math.abs(blockY - playerY);
+
+      // Check if the block is within the specified range around the player
+      if (distance <= range) {
+        if (!getTile(blockX, blockY)) {
+          // If block is within range, add it to the game
+          addSprite(blockX, blockY, blockSprite.type);
+        }
+      } else {
+        if (getTile(blockX, blockY)) {
+          // If block exceeds the range, remove it from the game
+          clearTile(blockX, blockY);
+        }
+      }
     }
   }
-  setTextures();
 }
 
 // Checks for a nearby flag and progress the level
@@ -1514,15 +1631,43 @@ function flagDetection() {
   // If flagFound returns something, run
   if (flagFound) {
     playTune(finishSFX, 1);
-    if (levels.length - 2 == level) {
-      // Checks if game is complete and loads the end screen
-      gameComplete();
-      return;
-    } else {
-      level++;
-      spawn();
+    nextLevel();
+  }
+}
+
+function nextLevel() {
+  if (levels.length - 2 == level) {
+    // Checks if game is complete and loads the end screen
+    gameComplete();
+    return;
+  } else {
+    level++;
+    spawn();
+  }
+}
+
+function errorPing() {
+  if (pingError == true) {
+    playTune(errorSFX);
+    pingError = false;
+  }
+}
+
+// Character Update Code
+function characterInit() {
+  // Checks for character gravity and applies the corresponding texture
+  if (gravity == "down") {
+    currentPlayer = playerDown;
+  } else if (gravity == "up") {
+    currentPlayer = playerUp;
+  } else if (gravity == "top") {
+    if (rotation == "vertical") {
+      currentPlayer = playerTop;
+    } else if (rotation == "horizontal") {
+      currentPlayer = playerTopSide;
     }
   }
+  setTextures();
 }
 
 // Texture Update Code
@@ -1596,17 +1741,9 @@ function setTextures() {
   }
 }
 
-function errorPing() {
-  if (pingError == true) {
-    playTune(errorSFX);
-    pingError = false;
-  }
-}
-
 // Refreshes gameIntervals based on current gameState and menuMode
 function updateGameIntervals() {
-  errorPingInterval = setInterval(errorPing, 1000); // Set interval for error sound being played
-
+  errorPingInterval = setInterval(errorPing, 1000); // Set interval for error sound being playe
   if (gameState == 1) {
     // Clear any existing intervals
     clearInterval(pointerChangeInterval);
@@ -1616,8 +1753,8 @@ function updateGameIntervals() {
     clearInterval(jumpLoopInterval);
 
     flagDetectionInterval = setInterval(flagDetection, 500); // Set interval for flag detection
-    blockDetectionInterval = setInterval(gravityBlockDetection, 600); // Set interval for gravity block detection
-    gravityLoopInterval = setInterval(gravityPull, 300); // Set interval for gravity calculation
+    blockDetectionInterval = setInterval(gravityBlockDetection, 400); // Set interval for gravity block detection
+    gravityLoopInterval = setInterval(gravityPull, 400); // Set interval for gravity calculation
     jumpLoopInterval = setInterval(jumpPull, 100); // Set interval for jump calculation
   } else if (gameState == 0) {
     // Clear any existing intervals
