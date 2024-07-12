@@ -5,11 +5,10 @@
 @addedOn: 2024-00-00
 */
 
+// A game with nothing but jumps and stuff
+
 const player = "p";
-const background = "z";
-const textBackground = "y";
-const leftTextBackground = "x";
-const rightTextBackground = "r";
+const topDownSpawner = "t";
 const arrow = "q";
 const block = "b";
 const magicBlock = "v";
@@ -17,6 +16,11 @@ const flagDown = "o";
 const flagUp = "c";
 const gravityBlockDown = "m";
 const gravityBlockUp = "n";
+
+const background = "z";
+const textBackground = "y";
+const leftTextBackground = "x";
+const rightTextBackground = "r";
 
 const buttonW = "w";
 const buttonA = "a";
@@ -29,17 +33,18 @@ const buttonL = "l";
 const blockActive = "h";
 let buttonActive = "g";
 
+let pingError; // Check errorPing()
 let isMoving = 0; // Check gravityPull()
 let jumpHeight = 0; // Check jumpUp()
-let lastClickTime = 0;
-let currentPointer = "";
-let highlightCoord;
-let pointerX = 2;
-let pointerY = 6;
-let optionCoord;
+let ableToJump = 0; // Check jumpUp()
+let currentPointer; // Check pointer functions
+let pointerX = 2; // Check pointer functions
+let pointerY = 6; // Check pointer functions
+let optionCoord; // Check pointer functions
 let playerCoord;
-let belowTile;
-let lowerTile;
+let belowTile; // Check jumpUp()
+let lowerTile; // Check jumpUp()
+let verticalTile; // Check gravityBlockDetection()
 
 // Explained at updateGameIntervals()
 let pointerChangeInterval;
@@ -430,6 +435,23 @@ const playerTopSide = bitmap`
 .......LL.......
 ................`;
 
+const topDownSpawnerTexture = bitmap`
+................
+................
+................
+...77...........
+...77...........
+...77...........
+.777777.........
+..7777..........
+...77...........
+.........9......
+...11...99......
+..1221.999999...
+..1221.999999...
+...11...99......
+.........9......
+................`;
 const arrowTexture = bitmap`
 ........22......
 ........222.....
@@ -447,6 +469,109 @@ const arrowTexture = bitmap`
 ................
 ................
 ................`;
+const magicBlockTexture = bitmap`
+LLLLLLLLLLLLLLLL
+L00LLLLLLLLLLLLL
+L0000000000000LL
+LL000000000000LL
+LL000000000000LL
+LL000077770000LL
+LL000777777000LL
+LL000775577000LL
+LL000775577000LL
+LL000777777000LL
+LL000077770000LL
+LL000000000000LL
+LL000000000000LL
+LL0000000000000L
+LLLLLLLLLLLLL00L
+LLLLLLLLLLLLLLLL`;
+const blockTexture = bitmap`
+LLLLLLLLLLLLLLLL
+L00LLLLLLLLLLLLL
+L0000000000000LL
+LL000000000000LL
+LL000000000000LL
+LL000077770000LL
+LL000777777000LL
+LL000777777000LL
+LL000777777000LL
+LL000777777000LL
+LL000077770000LL
+LL000000000000LL
+LL000000000000LL
+LL0000000000000L
+LLLLLLLLLLLLL00L
+LLLLLLLLLLLLLLLL`;
+const gravityBlockDownTexture = bitmap`
+................
+................
+.......77.......
+.......77.......
+.......77.......
+.......77.......
+....77777777....
+.....777777.....
+......7777......
+....7..77..7....
+....7......7....
+..77777..77777..
+...777....777...
+....7......7....
+................
+................`;
+const gravityBlockUpTexture = bitmap`
+................
+................
+....9......9....
+...999....999...
+..99999..99999..
+....9......9....
+....9..99..9....
+......9999......
+.....999999.....
+....99999999....
+.......99.......
+.......99.......
+.......99.......
+.......99.......
+................
+................`;
+const flagDownTexture = bitmap`
+................
+................
+..CCDDDD...DDD..
+..CCDDDDDDDDDD..
+..CCDDDDDDDDDD..
+..CCDDDDDDDDDD..
+..CCDDDDDDDDDD..
+..CCDDDDDDDDDD..
+..CCDDDDDDDDDD..
+..CC...DDDDD....
+..CC............
+..CC............
+..CC............
+..CC............
+..CC............
+..CC............`;
+const flagUpTexture = bitmap`
+............CC..
+............CC..
+............CC..
+............CC..
+............CC..
+............CC..
+....DDDDD...CC..
+..DDDDDDDDDDCC..
+..DDDDDDDDDDCC..
+..DDDDDDDDDDCC..
+..DDDDDDDDDDCC..
+..DDDDDDDDDDCC..
+..DDDDDDDDDDCC..
+..DDD...DDDDCC..
+................
+................`;
+
 const backgroundTexture = bitmap`
 0000000000000000
 0000000000000000
@@ -515,108 +640,6 @@ LLLLLLLLL.......
 LLLLLLLLL.......
 LLLLLLLLL.......
 LLLLLLLLL.......`;
-const magicBlockTexture = bitmap`
-LLLLLLLLLLLLLLLL
-L00LLLLLLLLLLLLL
-L0000000000000LL
-LL000000000000LL
-LL000000000000LL
-LL000077770000LL
-LL000777777000LL
-LL000775577000LL
-LL000775577000LL
-LL000777777000LL
-LL000077770000LL
-LL000000000000LL
-LL000000000000LL
-LL0000000000000L
-LLLLLLLLLLLLL00L
-LLLLLLLLLLLLLLLL`;
-const blockTexture = bitmap`
-LLLLLLLLLLLLLLLL
-L00LLLLLLLLLLLLL
-L0000000000000LL
-LL000000000000LL
-LL000000000000LL
-LL000077770000LL
-LL000777777000LL
-LL000777777000LL
-LL000777777000LL
-LL000777777000LL
-LL000077770000LL
-LL000000000000LL
-LL000000000000LL
-LL0000000000000L
-LLLLLLLLLLLLL00L
-LLLLLLLLLLLLLLLL`;
-const gravityBlockDownTexture = bitmap`
-................
-......7777......
-......7777......
-......7777......
-......7777......
-......7777......
-....77777777....
-.....777777.....
-......7777......
-...77..77..77...
-...77......77...
-...77......77...
-.777777..777777.
-..7777....7777..
-...77......77...
-................`;
-const gravityBlockUpTexture = bitmap`
-................
-...99......99...
-..9999....9999..
-.999999..999999.
-...99......99...
-...99......99...
-...99..99..99...
-......9999......
-.....999999.....
-....99999999....
-......9999......
-......9999......
-......9999......
-......9999......
-......9999......
-................`;
-const flagDownTexture = bitmap`
-................
-................
-..CCDDDD...DDD..
-..CCDDDDDDDDDD..
-..CCDDDDDDDDDD..
-..CCDDDDDDDDDD..
-..CCDDDDDDDDDD..
-..CCDDDDDDDDDD..
-..CCDDDDDDDDDD..
-..CC...DDDDD....
-..CC............
-..CC............
-..CC............
-..CC............
-..CC............
-..CC............`;
-const flagUpTexture = bitmap`
-............CC..
-............CC..
-............CC..
-............CC..
-............CC..
-............CC..
-....DDDDD...CC..
-..DDDDDDDDDDCC..
-..DDDDDDDDDDCC..
-..DDDDDDDDDDCC..
-..DDDDDDDDDDCC..
-..DDDDDDDDDDCC..
-..DDDDDDDDDDCC..
-..DDD...DDDDCC..
-................
-................`;
 
 const levels = [
   map`
@@ -673,7 +696,7 @@ bb.bb.b........
 ...b..b........`,
   map`
 bbbbbbbbbbbbbbb
-b.....pb......o
+b.....tb......o
 bbb.bbbb.bb.bbb
 b...b..b..b...b
 b.b....bbbbb..b
@@ -684,6 +707,19 @@ b....b.b......b
 bbbb.b.bb.bbb.b
 b....b....b...b
 bbbbbbbbbbbbbbb`,
+  map`
+...............
+...............
+bbb............
+...............
+...............
+...............
+...............
+...............
+...............
+...............
+..............o
+............bbb`,
   map`
 bbbbbbbbbbbbbbb
 .n...........m.
@@ -700,31 +736,28 @@ bbbbbbbbbbbbbbb`, // Finish Screen
 ];
 
 const menuSFX = tune`
-500: D4^500,
-15500`;
+750: C4~750,
+23250`;
 const errorSFX = tune`
 150: D4^150 + C4/150,
-150: C4~150,
+150: C4/150 + D4^150,
 4500`;
 const stepSFX = tune`
-50: C4^50 + C5^50,
-1550`;
+428.57142857142856: C4~428.57142857142856 + D4~428.57142857142856,
+13285.714285714284`;
 const jumpSFX = tune`
 428.57142857142856: F4~428.57142857142856 + G4~428.57142857142856,
 13285.714285714284`;
 const gravityChangeSFX = tune`
-125: D4~125 + C4^125,
-125: E4^125,
-125: F4~125 + G4~125,
-125: G4~125,
-3500`;
+300: F4^300,
+9300`;
 const deathSFX = tune`
-37.5: B4^37.5,
-37.5: B4~37.5,
-37.5: B4^37.5,
-37.5: B4~37.5,
-37.5: B4^37.5,
-1012.5`;
+75: B4^75,
+75: B4~75,
+75: B4^75,
+75: B4~75,
+75: B4^75,
+2025`;
 const finishSFX = tune`
 240: A5~240,
 240: B5~240,
@@ -765,6 +798,8 @@ const completeSFX = tune`
 150: G5-150`;
 
 // Texts (Looks more clean here)
+let currentLevelText;
+
 let mainMenuTitle = `
   Up  Down
   
@@ -870,56 +905,6 @@ let rotation = "horizontal";
 mainMenu();
 
 // Controls
-onInput("k", () => {
-  if (gameState == 0) {
-    pointerContinue("k");
-    pointerBack();
-  } else if (gameState == 1) {
-    jumpUp();
-  }
-});
-
-onInput("i", () => {
-  if (gameState == 1) {
-    jumpUp();
-  }
-});
-
-onInput("j", () => {
-  if (gameState == 1 && level != levels.length - 1) {
-    // Make sure no one opens the menu during end
-    mainMenu();
-  }
-});
-
-onInput("l", () => {
-  if (gameState == 0) {
-    pointerContinue();
-  }
-});
-
-onInput("a", () => {
-  if (gameState == 0) {
-    pointerUp();
-  } else if (gameState == 1) {
-    rotation = "horizontal";
-    getFirst(player).x -= 1;
-    playTune(stepSFX);
-    characterInit();
-  }
-});
-
-onInput("d", () => {
-  if (gameState == 0) {
-    pointerDown();
-  } else if (gameState == 1) {
-    rotation = "horizontal";
-    getFirst(player).x += 1;
-    playTune(stepSFX);
-    characterInit();
-  }
-});
-
 onInput("w", () => {
   if (gameState == 0) {
     pointerUp();
@@ -946,9 +931,54 @@ onInput("s", () => {
   }
 });
 
-// Tile interaction checks
-afterInput(() => {
-  if (gameState == 1) {}
+onInput("a", () => {
+  if (gameState == 0) {
+    pointerUp();
+  } else if (gameState == 1) {
+    rotation = "horizontal";
+    getFirst(player).x -= 1;
+    playTune(stepSFX);
+    characterInit();
+  }
+});
+
+onInput("d", () => {
+  if (gameState == 0) {
+    pointerDown();
+  } else if (gameState == 1) {
+    rotation = "horizontal";
+    getFirst(player).x += 1;
+    playTune(stepSFX);
+    characterInit();
+  }
+});
+
+onInput("i", () => {
+  if (gameState == 1) {
+    jumpUp();
+  }
+});
+
+onInput("k", () => {
+  if (gameState == 0) {
+    pointerContinue("k");
+    pointerBack();
+  } else if (gameState == 1) {
+    jumpUp();
+  }
+});
+
+onInput("j", () => {
+  if (gameState == 1 && level != levels.length - 1) {
+    // Make sure no one opens the menu during end
+    mainMenu();
+  }
+});
+
+onInput("l", () => {
+  if (gameState == 0) {
+    pointerContinue();
+  }
 });
 
 /// Menu Code
@@ -960,11 +990,14 @@ function mainMenu() {
   menuMode = 1;
   pointerOption = 0;
   updateGameIntervals();
+
+  // Check for current level
   if (level > 1 && level < levels.length - 1) {
     lastLevel = level; // Remember last level before mainMenu (if Applicable)
   } else {
     lastLevel = 1;
   }
+  currentLevelText = `Current level: ${lastLevel}`; // Grab level and add to text
   clearText();
   setTextures();
   level = 1;
@@ -981,6 +1014,11 @@ function mainMenu() {
     x: 3,
     y: 7,
     color: color`2`,
+  });
+  addText(currentLevelText, {
+    x: 2,
+    y: 15,
+    color: color`1`,
   });
 }
 
@@ -1077,7 +1115,7 @@ function pointerDown() {
       pointerChange();
       playTune(menuSFX);
     } else {
-      playTune(errorSFX);
+      pingError = true;
     }
   } else if (menuMode == 2) {
     if (pointerOption < 13) {
@@ -1085,7 +1123,7 @@ function pointerDown() {
       pointerUpdate();
       playTune(menuSFX);
     } else {
-      playTune(errorSFX);
+      pingError = true;
     }
   }
 }
@@ -1100,7 +1138,7 @@ function pointerUp() {
       pointerChange();
       playTune(menuSFX);
     } else {
-      playTune(errorSFX);
+      pingError = true;
     }
   } else if (menuMode == 2) {
     if (pointerOption > 0) {
@@ -1108,7 +1146,7 @@ function pointerUp() {
       pointerUpdate();
       playTune(menuSFX);
     } else {
-      playTune(errorSFX);
+      pingError = true;
     }
   }
 }
@@ -1122,14 +1160,12 @@ function pointerBack() {
       pointerOption = 0;
       pointerChange();
     } else {
-      playTune(errorSFX);
+      pingError = true;
     }
   } else if (menuMode == 2) {
     if (pointerOption > 0) {
       pointerOption = 0;
       pointerUpdate();
-    } else {
-      playTune(errorSFX);
     }
   }
 }
@@ -1140,7 +1176,9 @@ function pointerContinue(triggered) {
     // Main Menu
     if (triggered == "k") {
       // Check if triggered by back button
-      playTune(errorSFX);
+      if (pointerOption == 0) {
+        pingError = true;
+      }
     } else if (pointerOption == 0) {
       // Start the Game
       initializeGame();
@@ -1232,14 +1270,8 @@ function guideText() {
 function mapCheck() {
   if (level == 2) {
     addText(tutorial1, { x: 1, y: 0, color: color`1` });
-    gravity = "down";
   } else if (level == 3) {
     addText(tutorial2, { x: 10, y: 8, color: color`1` });
-    gravity = "down";
-  } else if (level == 4) {
-    gravity = "top";
-  } else {
-    gravity = "down";
   }
 }
 
@@ -1286,21 +1318,53 @@ function reset() {
   setTimeout(() => spawn(), 3000);
 }
 
+// End Screen Code
+function gameComplete() {
+  // Loads the final map and displays finishText
+  level = levels.length - 1;
+  spawn();
+  playTune(completeSFX);
+  addText(finishText, { x: 4, y: 2, color: color`6` });
+  setTimeout(() => {
+    mainMenu();
+  }, 10000);
+}
+
 // Dynamic Spawn Finding Code (Allows manually placed or automatic air finding)
 function spawnFind() {
-  if (getFirst(player) === undefined) {
-    spawnX = 0;
-    spawnY = 0;
+  if (getFirst(topDownSpawner)) {
+    // Check for topDownSpawner and set level accordingly
+    spawnX = getFirst(topDownSpawner).x;
+    spawnY = getFirst(topDownSpawner).y;
+    gravity = "top";
+    clearTile(spawnX, spawnY);
+  } else if (getFirst(player)) {
+    // Check for player and set accordingly
+    spawnX = getFirst(player).x;
+    spawnY = getFirst(player).y;
+    gravity = "down";
+    clearTile(spawnX, spawnY);
+  } else {
+    // If there is neither run automatic detection
+    gravity = "down";
     spawnHeight = height() - 1;
-    while (spawnY == 0) {
-      for (spawnHeight >= 0; spawnHeight--;) {
+    spawnX = 0;
+    spawnY = spawnHeight;
+    while (spawnHeight == height() - 1) {
+      for (spawnY >= 0; spawnY--;) {
         // Scan from bottom to top
-        if (getTile(spawnX, spawnHeight).length == 0 && spawnHeight > 1) {
+        if (
+          getTile(spawnX, spawnY).length == 0 &&
+          getTile(spawnX, spawnY + 1).length != 0 &&
+          spawnY < spawnHeight
+        ) {
           // Check for air block within bounds
-          spawnY = spawnHeight;
+          spawnHeight = 0; // Reset spawnHeight
           break; // Exit the loop if air block is found
-        } else if (spawnHeight < 2) {
+        } else if (spawnY >= spawnHeight) {
           // Check if exceeded bounds
+          spawnHeight = 0; // Reset
+          pingError = true;
           addText(errorSpawn, {
             x: 2,
             y: 6,
@@ -1317,33 +1381,20 @@ function spawnFind() {
         }
       }
     }
-  } else {
-    // If a player in the map is detected
-    spawnX = getFirst(player).x;
-    spawnY = getFirst(player).y;
-    clearTile(spawnX, spawnY);
   }
 }
 
 // Jump Code
 function jumpUp() {
   playerCoord = getFirst(player);
-  // Check for blocks below player (prevents infinite jumps) Replace if possible
-  if (gravity == "down") {
-    belowTile = getTile(playerCoord.x, playerCoord.y + 1);
-    lowerTile = getTile(playerCoord.x, playerCoord.y + 2);
-  } else if (gravity == "up") {
-    belowTile = getTile(playerCoord.x, playerCoord.y - 1);
-    lowerTile = getTile(playerCoord.x, playerCoord.y - 2);
-  }
-  if (
-    (lowerTile.length == 0 && belowTile.length != 0 && gravity != "top") ||
-    (lowerTile.length != 0 && belowTile.length == 0 && gravity != "top")
-  ) {
+  // Check if ableToJump is 0
+  if (ableToJump < 2) {
     if (gravity == "down") {
-      jumpHeight++;
+      jumpHeight++; // Tells jumpPull() to make player jump
+      ableToJump++; // Counts jumps made
     } else if (gravity == "up") {
-      jumpHeight--;
+      jumpHeight--; // Tells jumpPull() to make player jump
+      ableToJump++; // Counts jumps made
     }
     playTune(jumpSFX);
   }
@@ -1370,8 +1421,10 @@ function gravityPull() {
   // Collision check
   if (gravity == "down" && downCollision.length != 0) {
     isMoving = 0;
+    ableToJump = 0; // Resets jump counter
   } else if (gravity == "up" && upCollision.length != 0) {
     isMoving = 0;
+    ableToJump = 0; // Resets jump counter
   } else {
     isMoving += 1; // Jumping feels better requiring two iterations than longer intervals
   }
@@ -1399,33 +1452,32 @@ function gravityPull() {
 // Gravity Block Code
 function gravityBlockDetection() {
   playerCoord = getFirst(player);
-  let verticalTiles = [
-    getTile(playerCoord.x, playerCoord.y + 1)[0],
-    getTile(playerCoord.x, playerCoord.y - 1)[0],
-  ];
+  if (
+    gravity == "down" &&
+    getTile(playerCoord.x, playerCoord.y + 1).length != 0
+  ) {
+    // Checks current gravity and if there is a exisiting block below player
+    verticalTile = getTile(playerCoord.x, playerCoord.y + 1)[0];
+  } else if (
+    gravity == "up" &&
+    getTile(playerCoord.x, playerCoord.y - 1).length != 0
+  ) {
+    // Checks current gravity and if there is a exisiting block above player
+    verticalTile = getTile(playerCoord.x, playerCoord.y - 1)[0];
+  } else {
+    // Exits function if none is found
+    return;
+  }
   // Check tiles above and below for gravity blocks
-  if (verticalTiles.some((tile) => tile && tile.type == gravityBlockDown)) {
+  if (verticalTile.type == gravityBlockDown) {
     playTune(gravityChangeSFX);
     gravity = "down";
     characterInit();
-  } else if (
-    verticalTiles.some((tile) => tile && tile.type == gravityBlockUp)
-  ) {
+  } else if (verticalTile.type == gravityBlockUp) {
     playTune(gravityChangeSFX);
     gravity = "up";
     characterInit();
   }
-}
-
-// Loads the final map and displays finishText
-function gameComplete() {
-  level = levels.length - 1;
-  spawn();
-  playTune(completeSFX);
-  addText(finishText, { x: 4, y: 2, color: color`6` });
-  setTimeout(() => {
-    mainMenu();
-  }, 10000);
 }
 
 // Character Update Code
@@ -1481,10 +1533,8 @@ function setTextures() {
     if (menuMode == 1) {
       setLegend(
         [player, currentPlayer],
+        [topDownSpawner, topDownSpawnerTexture],
         [arrow, arrowTexture],
-        [background, backgroundTexture],
-        [textBackground, textBackgroundTexture],
-        [leftTextBackground, leftTextBackgroundTexture],
         [block, blockTexture],
         [magicBlock, magicBlockTexture],
         [flagDown, flagDownTexture],
@@ -1500,6 +1550,10 @@ function setTextures() {
         [buttonK, buttonKGlyph],
         [buttonL, buttonLGlyph],
         [blockActive, blockHighlightTexture],
+        [background, backgroundTexture],
+        [textBackground, textBackgroundTexture],
+        [leftTextBackground, leftTextBackgroundTexture],
+        [rightTextBackground, rightTextBackgroundTexture],
       );
     } else if (menuMode == 2) {
       setLegend(
@@ -1527,22 +1581,32 @@ function setTextures() {
   } else if (gameState == 1) {
     setLegend(
       [player, currentPlayer],
-      [background, backgroundTexture],
-      [textBackground, textBackgroundTexture],
-      [leftTextBackground, leftTextBackgroundTexture],
-      [rightTextBackground, rightTextBackgroundTexture],
+      [topDownSpawner, topDownSpawnerTexture],
       [block, blockTexture],
       [magicBlock, magicBlockTexture],
       [flagDown, flagDownTexture],
       [flagUp, flagUpTexture],
       [gravityBlockDown, gravityBlockDownTexture],
       [gravityBlockUp, gravityBlockUpTexture],
+      [background, backgroundTexture],
+      [textBackground, textBackgroundTexture],
+      [leftTextBackground, leftTextBackgroundTexture],
+      [rightTextBackground, rightTextBackgroundTexture],
     );
+  }
+}
+
+function errorPing() {
+  if (pingError == true) {
+    playTune(errorSFX);
+    pingError = false;
   }
 }
 
 // Refreshes gameIntervals based on current gameState and menuMode
 function updateGameIntervals() {
+  errorPingInterval = setInterval(errorPing, 1000); // Set interval for error sound being played
+
   if (gameState == 1) {
     // Clear any existing intervals
     clearInterval(pointerChangeInterval);
@@ -1552,7 +1616,7 @@ function updateGameIntervals() {
     clearInterval(jumpLoopInterval);
 
     flagDetectionInterval = setInterval(flagDetection, 500); // Set interval for flag detection
-    blockDetectionInterval = setInterval(gravityBlockDetection, 300); // Set interval for gravity block detection
+    blockDetectionInterval = setInterval(gravityBlockDetection, 600); // Set interval for gravity block detection
     gravityLoopInterval = setInterval(gravityPull, 300); // Set interval for gravity calculation
     jumpLoopInterval = setInterval(jumpPull, 100); // Set interval for jump calculation
   } else if (gameState == 0) {
