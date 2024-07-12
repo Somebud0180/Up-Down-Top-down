@@ -97,7 +97,7 @@ onInput("l", () => {
     pointerContinue();
   } else if (gameState == 1) {
     if (level > 0 && level < levels.length - 2) {
-      // Check if current level is between the first and second to the last
+      // Check if current level is between the first and second to the last. Set as 2 in the original as the final 3 were considered special.
       nextLevel();
     } else {
       pingError = true;
