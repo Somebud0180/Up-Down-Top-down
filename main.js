@@ -735,19 +735,6 @@ bb..bb..bb.....
 ...........b...
 bbbbbbbbbb.....`, // 7 Game Map 6 "Simple"
   map`
-bbbbbbbbbbbbbbb
-t.............b
-bbbbb.bbbb.bbbb
-b.b...b..b....b
-b...bbbb.b.bb.b
-bb.bbb.b.b.b..b
-b..b.b...bbb.bb
-b.bb.b.b...b..b
-b......b.bbbbbb
-b.bbb.bb..b...b
-b.b....b....b.o
-bbbbbbbbbbbbbbb`, // 8 Game Map 7 "Sly"
-  map`
 ...............
 .....b.......o.
 ........b..bbb.
@@ -759,7 +746,20 @@ b..............
 bbb..bb..b..bb.
 ...............
 ..............b
-bb..b..b..b..bb`, // 9 Game Map 8 "Platforms"
+bb..b..b..b..bb`, // 8 Game Map 7 "Sly"
+  map`
+m..............
+....b.b.bb....o
+...b......bbbbb
+.b.............
+...............
+.........n.....
+.........b.....
+..........b.bb.
+...............
+....b..b......b
+..b.........b..
+b........bbb...`, // 9 Game Map 8 "Thin Line"
   map`
 bbbbbbbbbbbbbbb
 mmm............
@@ -853,8 +853,78 @@ m......pb......
 .b.....b.......
 ..b...b..b.....
 bn..b..b.bnnnnn
-.........bbbbbb`, // 16 Game Map 15  "Skeleton"
-
+.........bbbbbb`, // 16 Game Map 15  "W"
+  map`
+bbbbbbbbbbbbbbb
+b.......b...b.b
+b.bbbbbbb.b...b
+b.....b...bbb.b
+b.b.b.bbb.b...b
+b.b.b.btb.bbb.b
+b.b.b.......b.b
+b.bbbbbbbbbbb.b
+b.b...b...b...b
+b.b.b.bbb.b.b.b
+b...b..ob...b.b
+bbbbbbbbbbbbbbb`, // 17 Game Map 16  "Lines"
+  map`
+bbbbbbbbbbbbbbb
+b.............b
+bbb.bbtbbbbbb.b
+b.b..bbb....b.b
+b.bb.....bb.b.b
+b....bbbbb..b.b
+b.b.bbbb...bb.b
+b.b.b.bb.bbb..b
+bbb.b..b.b...bb
+b...bb.b.b.bbbo
+b.b....b.b.....
+bbbbbbbbbbbbbbb`, // 18 Game Map 17  "Lol"
+  map`
+....bm.m.b...bb
+....bm...b....m
+....bm...b...b.
+....b....b.m.b.
+....m....b..mb.
+.m......nbm..b.
+.....n...b...b.
+...m.b...b.m.b.
+....nb...b...b.
+....nb.......b.
+..p.nb.......bo
+..n.nb.....n.bb`, // 19 Game Map 18  "Tense"
+  map`
+bbbbbbbbbbbbbbbbbbbb
+bt....b...b....b...b
+b.bbb...b...b.bb.b.b
+b...b.bbbb.b.....b.b
+b.b......b.bbbbb.b.b
+b.bb.b.b.b.....b.b.b
+b.b..b.b.b.b.b.b.b.b
+b.b.bbbb...b.b...b.b
+bb..b....bb....bbb.b
+b..bbbbbb...b.bb.b.b
+b.bb.b.b.bb...b....b
+b.b..v.b.ob.b.b.bb.b
+b.b.bb.b.b..bbb.b..b
+b....b...b........bb
+bbbbbbbbbbbbbbbbbbbb`, // 20 Game Map 19  "Masive"
+  map`
+....................
+.bbbbbbbbbbbbbbbbbb.
+....................
+....................
+....................
+....................
+....................
+....................
+.bbbbbbbmmmmbbbbbbbb
+....................
+............mmmmmmm.
+b.b..b..b..b........
+b.b.....b....b......
+...........b.b......
+b.b.b.b.b...b.n....n`, // 21 Game Map 20  "Masive"
   map`
 bbbbbbbbbbbbbbb
 .n...........m.
@@ -867,7 +937,7 @@ bbbbbbbbbbbbbbb
 ...............
 ...............
 .n...........m.
-bbbbbbbbbbbbbbb`, // 17 Finish Screen
+bbbbbbbbbbbbbbb`, // 22 Finish Screen
 ];
 
 const menuSFX = tune`
@@ -1115,7 +1185,7 @@ onInput("l", () => {
   if (gameState == 0) {
     pointerContinue();
   } else if (gameState == 1) {
-    if (level > 0 && level < levels.length - 2) {
+    if (level > 0 && level < levels.length - 4) {
       nextLevel();
     } else {
       pingError = true;
@@ -1499,7 +1569,7 @@ function spawnFind() {
     spawnX = 0;
     spawnY = spawnHeight;
     while (spawnHeight == height() - 1) {
-      for (spawnY >= 0; spawnY--;) {
+      for (spawnY >= 0; spawnY--; ) {
         // Scan from bottom to top
         if (
           getTile(spawnX, spawnY).length == 0 &&
@@ -1639,37 +1709,40 @@ function gravityBlockDetection() {
 
 function displayBlocksInRange() {
   if (gravity == "top") {
-    // Get the player's coordinates
-    playerCoord = getFirst(player);
-    let playerX = playerCoord.x;
-    let playerY = playerCoord.y;
+    if (getFirst(player)) {
+      // Get the player's coordinates
+      playerCoord = getFirst(player);
+      let playerX = playerCoord.x;
+      let playerY = playerCoord.y;
 
-    // Define the range around the player (5 grids in each direction)
-    const range = 3;
+      // Define the range around the player (5 grids in each direction)
+      const range = 3;
 
-    for (let blockSprite of allBlocks) {
-      let blockX = blockSprite.x;
-      let blockY = blockSprite.y;
-      addSprite(blockX, blockY, block);
-    }
+      for (let blockSprite of allBlocks) {
+        let blockX = blockSprite.x;
+        let blockY = blockSprite.y;
+        addSprite(blockX, blockY, block);
+      }
 
-    for (let blockSprite of allBlocks) {
-      let blockX = blockSprite.x;
-      let blockY = blockSprite.y;
+      for (let blockSprite of allBlocks) {
+        let blockX = blockSprite.x;
+        let blockY = blockSprite.y;
 
-      // Calculate the distance between the block and the player
-      const distance = Math.abs(blockX - playerX) + Math.abs(blockY - playerY);
+        // Calculate the distance between the block and the player
+        const distance =
+          Math.abs(blockX - playerX) + Math.abs(blockY - playerY);
 
-      // Check if the block is within the specified range around the player
-      if (distance <= range) {
-        if (!getTile(blockX, blockY)) {
-          // If block is within range, add it to the game
-          addSprite(blockX, blockY, blockSprite.type);
-        }
-      } else {
-        if (getTile(blockX, blockY)) {
-          // If block exceeds the range, remove it from the game
-          clearTile(blockX, blockY);
+        // Check if the block is within the specified range around the player
+        if (distance <= range) {
+          if (!getTile(blockX, blockY)) {
+            // If block is within range, add it to the game
+            addSprite(blockX, blockY, blockSprite.type);
+          }
+        } else {
+          if (getTile(blockX, blockY)) {
+            // If block exceeds the range, remove it from the game
+            clearTile(blockX, blockY);
+          }
         }
       }
     }
@@ -1681,6 +1754,7 @@ function flagDetection() {
   playerCoord = getFirst(player);
   let surroundingTiles = [
     getTile(playerCoord.x, playerCoord.y + 1)[0], // Tile below player
+    getTile(playerCoord.x, playerCoord.y - 1)[0], // Tile above player
     getTile(playerCoord.x + 1, playerCoord.y)[0], // Tile to the right of player
     getTile(playerCoord.x - 1, playerCoord.y)[0], // Tile to the left of playerd
   ];
