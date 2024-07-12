@@ -655,7 +655,7 @@ const levels = [
 ...............
 .....l.........
 ...............
-...............`, // Guide
+...............`, // 0 Guide
   map`
 b.vvvvvvvvvvv.b
 m.vn.......mv.m
@@ -668,7 +668,7 @@ m.vn.......mv.m
 ...............
 ...........b...
 n.bb.b.b.bb...o
-b.............b`, // Main Menu
+b.............b`, // 1 Main Menu || Game Map 1
   map`
 ...............
 ...............
@@ -681,7 +681,7 @@ b.............b`, // Main Menu
 .....b.........
 ..b.b..........
 bb.............
-...............`,
+...............`, // 2 Game Map 2 "Steps"
   map`
 ....b...b.bbbbb
 ....b...b.....c
@@ -694,7 +694,7 @@ bb.............
 ........b......
 .n..n...b......
 bb..b.n.b......
-....b.b.b......`,
+....b.b.b......`, // 4 Game Map 3 "Switch"
   map`
 bbbbbbbbbbbbbbb
 b.....tb......o
@@ -707,7 +707,7 @@ b.bb...b.bb.b.b
 b....b.b......b
 bbbb.b.bb.bbb.b
 b....b....b...b
-bbbbbbbbbbbbbbb`,
+bbbbbbbbbbbbbbb`, // 5 Game Map 4 "Pathfinder"
   map`
 ...............
 ...............
@@ -720,7 +720,7 @@ bbb............
 ...............
 ...............
 ..............o
-............bbb`,
+............bbb`, // 6 Game Map 5 "Slop"
   map`
 ...............
 ..............o
@@ -733,7 +733,7 @@ bb..bb..bb.....
 ..............b
 .............bb
 ...........b...
-bbbbbbbbbb.....`,
+bbbbbbbbbb.....`, // 7 Game Map 6 "Simple"
   map`
 bbbbbbbbbbbbbbb
 t.............b
@@ -746,7 +746,7 @@ b.bb.b.b...b..b
 b......b.bbbbbb
 b.bbb.bb..b...b
 b.b....b....b.o
-bbbbbbbbbbbbbbb`,
+bbbbbbbbbbbbbbb`, // 8 Game Map 7 "Sly"
   map`
 ...............
 .....b.......o.
@@ -759,7 +759,7 @@ b..............
 bbb..bb..b..bb.
 ...............
 ..............b
-bb..b..b..b..bb`,
+bb..b..b..b..bb`, // 9 Game Map 8 "Platforms"
   map`
 bbbbbbbbbbbbbbb
 mmm............
@@ -772,7 +772,7 @@ bb.b.b..b.b....
 .............b.
 .............b.
 ...b....b..b..n
-bb....b....bbbb`,
+bb....b....bbbb`, // 10 Game Map 9 "Up and Down"
   map`
 bbbbbbbbbbbbbbbbbbb
 b............b....b
@@ -788,7 +788,7 @@ bbbbb...bbb.b.b.bbb
 b.....b.....b.....b
 b.bb.bbbbbb.bb.bb.b
 b.......b.........b
-bbbbbbbbbbbbbbbbbbb`,
+bbbbbbbbbbbbbbbbbbb`, // 11 Game Map 10 "Familiar"
   map`
 bbbbbbbbbbbbbbb
 b..b.......b..b
@@ -801,7 +801,7 @@ bbbbbb...bbbbbb
 ...............
 b.............b
 ..b.b..p..b.b..
-....bbbbbbb....`,
+....bbbbbbb....`, // 12 Game Map 11  "Face"
   map`
 bbbbbbbbbbbbbbb
 .n...........m.
@@ -814,7 +814,7 @@ bbbbbbbbbbbbbbb
 ...............
 ...............
 .n...........m.
-bbbbbbbbbbbbbbb`, // Finish Screen
+bbbbbbbbbbbbbbb`, // 13 Finish Screen
 ];
 
 const menuSFX = tune`
@@ -1063,16 +1063,14 @@ onInput("l", () => {
     pointerContinue();
   } else if (gameState == 1) {
     if (level > 0 && level < levels.length - 2) {
-      nextLevel();
+      nextLevel()
     } else {
       pingError = true;
     }
   }
 });
 
-afterInput(() => {
-  displayBlocksInRange();
-});
+afterInput(() => {displayBlocksInRange()});
 
 /// Menu Code
 // Sets up the main menu
@@ -1446,7 +1444,7 @@ function spawnFind() {
     spawnX = 0;
     spawnY = spawnHeight;
     while (spawnHeight == height() - 1) {
-      for (spawnY >= 0; spawnY--; ) {
+      for (spawnY >= 0; spawnY--;) {
         // Scan from bottom to top
         if (
           getTile(spawnX, spawnY).length == 0 &&
@@ -1594,7 +1592,7 @@ function displayBlocksInRange() {
     for (let blockSprite of allBlocks) {
       let blockX = blockSprite.x;
       let blockY = blockSprite.y;
-
+      
       // Calculate the distance between the block and the player
       const distance = Math.abs(blockX - playerX) + Math.abs(blockY - playerY);
 
@@ -1631,7 +1629,7 @@ function flagDetection() {
   // If flagFound returns something, run
   if (flagFound) {
     playTune(finishSFX, 1);
-    nextLevel();
+    nextLevel()
   }
 }
 
@@ -1641,8 +1639,8 @@ function nextLevel() {
     gameComplete();
     return;
   } else {
-    level++;
-    spawn();
+      level++;
+      spawn();
   }
 }
 
