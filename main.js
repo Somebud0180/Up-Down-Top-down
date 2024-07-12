@@ -803,6 +803,59 @@ b.............b
 ..b.b..p..b.b..
 ....bbbbbbb....`, // 12 Game Map 11  "Face"
   map`
+..........b..mm
+..........b....
+....bn....b...o
+.bnnb...n.b.bbb
+..bbb.n...b....
+.bmmb.....b....
+....b..n..b....
+bbb.bn....b....
+....b.....b....
+....b.n.n.b....
+...nb....n.nnnn
+bbbbbbbbbbbbbbb`, // 13 Game Map 12  "Float"
+  map`
+bbbbbbbbbbbbbbb
+t.bbb....bbb.bb
+b..b..bb..b...b
+bb..b..bb.b.b.b
+bbb..b.b..b.b.b
+b.bb.b.b.bb.b.b
+b......b....b.b
+b.bbbbbbbbb.b.b
+b..b.....b..b.b
+bb.b.b.bbbbbb.b
+b....b.bo.....b
+bbbbbbbbbbbbbbb`, // 14 Game Map 13  "Bumpy"
+  map`
+b.....bbb.....b
+b.....vov.....b
+b..bbbbbbbbb..b
+bb.b...b...b.bb
+b..v..bbb..b..b
+b.bbb..b..bbb.b
+b..b..bbb..b..b
+b......b......b
+bb..bbbbbbb..bb
+b....b...b....b
+b.b..v.p.v..b.b
+b...bbbbbbb...b`, // 15 Game Map 14  "Skeleton"
+  map`
+bbbbmbbbbvvvvvm
+m......pb......
+.b..m..bb.....o
+.b.....b.....bb
+.b.n.n.b.......
+.b.....b.v.v.v.
+.b.....b.v.v.v.
+.b.....bmb.b.b.
+.b.....b.......
+..b...b..b.....
+bn..b..b.bnnnnn
+.........bbbbbb`, // 16 Game Map 15  "Skeleton"
+
+  map`
 bbbbbbbbbbbbbbb
 .n...........m.
 ...............
@@ -814,7 +867,7 @@ bbbbbbbbbbbbbbb
 ...............
 ...............
 .n...........m.
-bbbbbbbbbbbbbbb`, // 13 Finish Screen
+bbbbbbbbbbbbbbb`, // 17 Finish Screen
 ];
 
 const menuSFX = tune`
@@ -1063,14 +1116,16 @@ onInput("l", () => {
     pointerContinue();
   } else if (gameState == 1) {
     if (level > 0 && level < levels.length - 2) {
-      nextLevel()
+      nextLevel();
     } else {
       pingError = true;
     }
   }
 });
 
-afterInput(() => {displayBlocksInRange()});
+afterInput(() => {
+  displayBlocksInRange();
+});
 
 /// Menu Code
 // Sets up the main menu
@@ -1480,6 +1535,7 @@ function spawnFind() {
 // Jump Code
 function jumpUp() {
   playerCoord = getFirst(player);
+
   // Check if ableToJump is 0
   if (ableToJump < 2) {
     if (gravity == "down") {
@@ -1512,10 +1568,18 @@ function gravityPull() {
   let downCollision = getTile(playerCoord.x, playerCoord.y + 1);
   let upCollision = getTile(playerCoord.x, playerCoord.y - 1);
   // Collision check
-  if (gravity == "down" && downCollision.length != 0) {
+  if (
+    gravity == "down" &&
+    downCollision.length != 0 &&
+    downCollision[0].type != magicBlock
+  ) {
     isMoving = 0;
     ableToJump = 0; // Resets jump counter
-  } else if (gravity == "up" && upCollision.length != 0) {
+  } else if (
+    gravity == "up" &&
+    upCollision.length != 0 &&
+    upCollision[0].type != magicBlock
+  ) {
     isMoving = 0;
     ableToJump = 0; // Resets jump counter
   } else {
@@ -1524,14 +1588,14 @@ function gravityPull() {
 
   // Apply Gravity
   if (isMoving > 1) {
-    if (gravity == "down" && downCollision == 0) {
+    if (gravity == "down") {
       // If gravity is down and there is no block below, lower the player y
       getFirst(player).y++;
       if (getFirst(player).y == height() - 1) {
         // If player is at the bottom edge of the map, execute death function
         reset();
       }
-    } else if (gravity == "up" && upCollision == 0) {
+    } else if (gravity == "up") {
       // If gravity is up and there is no block above, increase the player y
       getFirst(player).y--;
       if (getFirst(player).y == 0) {
@@ -1592,7 +1656,7 @@ function displayBlocksInRange() {
     for (let blockSprite of allBlocks) {
       let blockX = blockSprite.x;
       let blockY = blockSprite.y;
-      
+
       // Calculate the distance between the block and the player
       const distance = Math.abs(blockX - playerX) + Math.abs(blockY - playerY);
 
@@ -1629,7 +1693,7 @@ function flagDetection() {
   // If flagFound returns something, run
   if (flagFound) {
     playTune(finishSFX, 1);
-    nextLevel()
+    nextLevel();
   }
 }
 
@@ -1639,8 +1703,8 @@ function nextLevel() {
     gameComplete();
     return;
   } else {
-      level++;
-      spawn();
+    level++;
+    spawn();
   }
 }
 
