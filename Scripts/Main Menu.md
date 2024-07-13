@@ -13,6 +13,34 @@ This includes a trimmed down version of the guide (without blocks), spawn code, 
 - A map on level 0 and 1, for the guide and the menu respectively (Sample given here)
 - _Most_ items that need configuring are marked with three slashes '///'. I recoomend you still have a look through the code
 
+### Variables
+**gameState**: Used to track wether user is in the menu or in-game (0 for menu, 1 for in-game)
+
+**menuMode**: Used to track wether user is in the main menu or in the guide (1 for main menu, 2 for guide)
+
+**pointerOption**: Used to track what the pointer is pointing at
+
+**backButtonState**: Used to track wether the back button is selected
+
+**level**: Used to set which level the user is on
+
+**lastLevel**: Used to save the level the user was on
+
+**spawnX**: _(optional)_ Used to set where the player spawns
+
+**spawnY**: _(optional)_ Used to set where the player spawns
+
+### Controls
+| Key | Action                  |
+|:---:|:----------------------: |
+|  W  | Move pointer up                |
+|  A  | Move pointer down              |
+|  S  | Move pointer up                |
+|  D  | Move pointer down              |
+|  J  | Returns to main menu (in-game) |
+|  K  | Back button                    |
+|  L  | Continue button                |
+
 ``` js
 const arrow = "q";
 const buttonW = "w";
