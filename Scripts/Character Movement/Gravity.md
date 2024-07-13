@@ -1,5 +1,10 @@
 ## Gravity & Movement Code
-This includes gravity (Up, Down, Top-down), and movement code. Gravity without the other modes available at the bottom. For jumping, visit (placeholderJumpLink)
+This includes gravity (Up, Down, Top-down), and movement code. Gravity without the other modes available at the bottom. For jumping, check out [Jump](Jump.md)
+
+Trimmed Down:
+- [Without top-down rotation](#for-top-down-mode-without-rotation)
+- [Without top-down](#for-gravity-code-without-top-down)
+- [Gravity downwards only](#for-gravity-code-solely-in-downward-direction)
 
 ### Pre-requisites
 - Your player in the map, or a way to spawn the player
@@ -223,10 +228,10 @@ function setTextures() {
 let gravityLoopInterval = setInterval(gravityPull, 400); // Set interval for gravity calculation
 ```
 
-### Trimming Down
-For top-down mode with one player texture
+## Trimming Down
+### For top-down mode without rotation
 - Remove rotation variable
-- Remove secondary player texture
+- Remove playerTopSide texture
 
 #### Controls
 | Key | Action                  |
