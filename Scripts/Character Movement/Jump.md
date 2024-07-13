@@ -3,8 +3,8 @@ This includes jump (Double and Single), gravity (Up, Down, Top-down), and moveme
 
 Trimmed Down:
 - [Without top-down rotation](#for-gravity--jump-code-without-top-down-rotation)
-- [Without top-down](https://github.com/Somebud0180/Up-Down-Top-down/edit/Beta/Scripts/Character%20Movement/Jump.md#for-gravity--jump-code-without-top-down-rotation)
-- [Gravity downwards only](https://github.com/Somebud0180/Up-Down-Top-down/edit/Beta/Scripts/Character%20Movement/Jump.md#for-gravity--jump-code-without-top-down-rotation)
+- [Without top-down](#for-gravity--jump-code-without-top-down-rotation)
+- [Gravity downwards only](#for-gravity--jump-code-without-top-down-rotation)
   
 ### Pre-requisites
 - Your player in the map, or a way to spawn the player
