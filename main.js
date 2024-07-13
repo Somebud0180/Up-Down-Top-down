@@ -1408,7 +1408,6 @@ function spawn() {
 // Reset Code
 function reset() {
   playTune(deathSFX);
-  console.log(level);
   if (level != 20) {
     // Level 2l has a unique size that makes the background off centre, skips background there
     addSprite(4, 5, leftTextBackground); // Makes the text background centre
