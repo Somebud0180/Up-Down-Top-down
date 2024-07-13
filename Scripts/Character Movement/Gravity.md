@@ -11,6 +11,10 @@ This includes gravity (Up, Down, Top-down), and movement code. Gravity without t
  
 ### Variables
 
+**downCollision**: A variable containing the tile below the player, used to check for collision in gravityPull().
+
+**upCollision**: A variable containing the tile above the player, used to check for collision in gravityPull().
+
 **rotation**: A variable used to track player facing, used in top-down mode.
 
 **currentPlayer**: A variable used to track player texture, values are:
