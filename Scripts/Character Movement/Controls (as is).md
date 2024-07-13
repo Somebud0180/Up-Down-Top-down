@@ -7,6 +7,14 @@
 
 **pingError**: A variable used to tell a background function to play the errorSFX. Prevents the error sound from playing more than once a second.
 
+**currentPlayer**: A variable used to track player texture, values are:
+|     Value     | Corresponds to                    |
+|:-------------:|:--------------------------------: |
+| playerDown    | gravity down                      |
+| playerUp      | gravity up                        |
+| playerTop     | top-down mode facing vertically   |
+| playerTopSide | top-down mode facing horizontally |
+
 ### Functions
 **characterInit()**: A function used to rerun setLegend when character texture changes.
 

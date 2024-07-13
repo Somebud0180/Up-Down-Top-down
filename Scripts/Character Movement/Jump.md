@@ -1,5 +1,5 @@
-## Gravity & Movement Code
-This includes gravity (Up, Down, Top-down), and movement code. Gravity without the other modes available at the bottom. For jumping, visit (placeholderJumpLink)
+## Jump & Movement Code
+This includes jump (Double and Single), gravity (Up, Down, Top-down), and movement code. Jump and Gravity without the other modes available at the bottom.
 
 ### Pre-requisites
 - Your player in the map, or a way to spawn the player
@@ -15,6 +15,10 @@ This includes gravity (Up, Down, Top-down), and movement code. Gravity without t
 
 **upCollision**: A variable containing the tile above the player, used to check for collision in gravityPull().
 
+**jumpHeight**: A variable used to track how high the player should jump. Set by jumpUp(), used in jumpPull()
+
+**ableToJump**: A variable used to track if the player can jump. Increased by jumpUp(), reset by gravityPull()
+
 **rotation**: A variable used to track player facing, used in top-down mode.
 
 **currentPlayer**: A variable used to track player texture, values are:
@@ -25,8 +29,11 @@ This includes gravity (Up, Down, Top-down), and movement code. Gravity without t
 | playerTop     | top-down mode facing vertically   |
 | playerTopSide | top-down mode facing horizontally |
 
+
 ### Functions
 **characterInit()**: A function used to rerun setLegend when character texture changes.
+
+**jumpUp()**: A function used to check for jump limit and jump height. Made as a function so that two buttons to act as a jump button and to make it look cleaner.
 
 ### Controls
 | Key | Action                  |
@@ -35,8 +42,8 @@ This includes gravity (Up, Down, Top-down), and movement code. Gravity without t
 |  A  | to move down (top-down) |
 |  S  | to move left            |
 |  D  | to move right           |
-|  I  | to move up              |
-|  K  | to move up              |
+|  I  | to jump                 |
+|  K  | to jump                 |
 
 
 ``` js
@@ -47,6 +54,9 @@ const player = "p";
 let currentPlayer = playerDown;
 let gravity = "down";
 let rotation = "horizontal";
+let jumpHeight = 0; // Check jumpUp()
+let ableToJump = 0; // Check jumpUp()
+let playerCoord;
 
 // Textures
 const playerDown = bitmap`
@@ -149,29 +159,60 @@ onInput("d", () => {
 });
 
 onInput("i", () => {
-  getFirst(player).y -= 1; // Moves player up
+  jumpUp();
 });
 
 onInput("k", () => {
-  getFirst(player).y -= 1; // Moves player up
+  jumpUp();
 });
 
 onInput("j", () => {});
 
 onInput("l", () => {});
 
+// Jump Code
+function jumpUp() {
+  playerCoord = getFirst(player);
+  // Check if ableToJump is less than 2 (max jump height)
+  if (ableToJump < 2) {
+    if (gravity == "down") {
+      jumpHeight++; // Tells jumpPull() to make player jump
+      ableToJump++; // Counts jumps made
+    } else if (gravity == "up") {
+      jumpHeight--; // Tells jumpPull() to make player jump
+      ableToJump++; // Counts jumps made
+    }
+    playTune(jumpSFX);
+  }
+}
+
+// Jump Velocity Code
+function jumpPull() {
+  // Adjusts player y postion based on the corresponding gravity whilst jumpHeight is not 0
+  while (jumpHeight < 0) {
+    getFirst(player).y++;
+    jumpHeight++;
+  }
+  while (jumpHeight > 0) {
+    getFirst(player).y--;
+    jumpHeight--;
+  }
+}
+
 // Gravity Code
 function gravityPull() {
-  let playerCoord = getFirst(player);
+  playerCoord = getFirst(player);
   let downCollision = getTile(playerCoord.x, playerCoord.y + 1);
   let upCollision = getTile(playerCoord.x, playerCoord.y - 1);
   // Collision check
   if (gravity == "down" && downCollision.length != 0) {
     // Checks if gravity up and if there is a block above the player
     isMoving = 0;
+    ableToJump = 0; // Resets jump counter
   } else if (gravity == "up" && upCollision.length != 0) {
     // Checks if gravity up and if there is a block above the player
     isMoving = 0;
+    ableToJump = 0; // Resets jump counter
   } else {
     isMoving += 1; // Jumping feels better requiring two iterations than longer intervals
   }
@@ -221,25 +262,32 @@ function setTextures() {
 
 // let intervalName = setInterval(code, delay) Where delay is measured in milliseconds
 let gravityLoopInterval = setInterval(gravityPull, 400); // Set interval for gravity calculation
+let jumpLoopInterval = setInterval(jumpPull, 100); // Set interval for jump calculation
 ```
 
 ### Trimming Down
-For gravity code solely in downward direction
+For gravity & jump code solely in downward direction
 - Make player texture static
 - Remove rotation variable
 - Remove gravity variable
 - Remove characterInit(), you may call setTextures() instead or move it away from function.
 
 ### Controls
-| Key | Action        |
-|:---:|:------------: |
-|  W  | to move up    |
-|  S  | to move left  |
-|  D  | to move right |
+| Key | Action                  |
+|:---:|:----------------------: |
+|  S  | to move left            |
+|  D  | to move right           |
+|  I  | to jump                 |
+|  K  | to jump                 |
 
 ``` js
-// Declare Sprites
+// Declare sprites
 const player = "p";
+
+// Set Defaults
+let jumpHeight = 0; // Check jumpUp()
+let ableToJump = 0; // Check jumpUp()
+let playerCoord;
 
 const playerTexture = bitmap`
 ................
@@ -267,36 +315,60 @@ setLegend(
 
 // Controls
 onInput("w", () => {
-  getFirst(player).y -= 1; // Moves player up
 });
 
 onInput("s", () => {
 });
 
 onInput("a", () => {
-  getFirst(player).x -= 1; // Moves player left
+    getFirst(player).x -= 1; // Moves player left
 });
 
 onInput("d", () => {
   getFirst(player).x += 1; // Moves player right
 });
 
-onInput("i", () => {});
+onInput("i", () => {
+  jumpUp();
+});
 
-onInput("k", () => {});
+onInput("k", () => {
+  jumpUp();
+});
 
 onInput("j", () => {});
 
 onInput("l", () => {});
 
+// Jump Code
+function jumpUp() {
+  playerCoord = getFirst(player);
+  // Check if ableToJump is less than 2 (max jump height)
+  if (ableToJump < 2) {
+    jumpHeight++; // Tells jumpPull() to make player jump
+    ableToJump++; // Counts jumps made
+    playTune(jumpSFX);
+  }
+}
+
+// Jump Velocity Code
+function jumpPull() {
+  // Adjusts player y postion based on the corresponding gravity whilst jumpHeight is not 0
+  while (jumpHeight < 0) {
+    getFirst(player).y++;
+    jumpHeight++;
+  }
+}
+
 // Gravity Code
 function gravityPull() {
-  let playerCoord = getFirst(player);
+  playerCoord = getFirst(player);
   let downCollision = getTile(playerCoord.x, playerCoord.y + 1);
   // Collision check
   if (downCollision.length != 0) {
     // Checks if gravity down and if there is a block above the player
     isMoving = 0;
+    ableToJump = 0; // Resets jump counter
   } else {
     isMoving += 1; // Jumping feels better requiring two iterations than longer intervals
   }
@@ -311,11 +383,12 @@ function gravityPull() {
   }
 }
 
-// Set Interval Code
 // let intervalName = setInterval(code, delay) Where delay is measured in milliseconds
 let gravityLoopInterval = setInterval(gravityPull, 400); // Set interval for gravity calculation
+let jumpLoopInterval = setInterval(jumpPull, 100); // Set interval for jump calculation
 ```
-For gravity code without top-down
+
+For gravity & jump code without top-down
 - Remove rotation variable
 
 ### Controls
@@ -333,9 +406,9 @@ const player = "p";
 // Set Defaults
 let currentPlayer = playerDown;
 let gravity = "down";
-let rotation = "horizontal";
 let jumpHeight = 0; // Check jumpUp()
 let ableToJump = 0; // Check jumpUp()
+let playerCoord;
 
 // Textures
 const playerDown = bitmap`
@@ -374,9 +447,7 @@ const playerUp = bitmap`
 ................`;
 
 // Controls
-onInput("w", () => {
-  getFirst(player).y -= 1; // Moves player up
-});
+onInput("w", () => {});
 
 onInput("s", () => {});
 
@@ -390,26 +461,61 @@ onInput("d", () => {
   characterInit();
 });
 
-onInput("i", () => {});
+onInput("i", () => {
+  jumpUp();
+});
 
-onInput("k", () => {});
+onInput("k", () => {
+  jumpUp();
+});
 
 onInput("j", () => {});
 
 onInput("l", () => {});
 
+// Jump Code
+function jumpUp() {
+  playerCoord = getFirst(player);
+  // Check if ableToJump is less than 2 (max jump height)
+  if (ableToJump < 2) {
+    if (gravity == "down") {
+      jumpHeight++; // Tells jumpPull() to make player jump
+      ableToJump++; // Counts jumps made
+    } else if (gravity == "up") {
+      jumpHeight--; // Tells jumpPull() to make player jump
+      ableToJump++; // Counts jumps made
+    }
+    playTune(jumpSFX);
+  }
+}
+
+// Jump Velocity Code
+function jumpPull() {
+  // Adjusts player y postion based on the corresponding gravity whilst jumpHeight is not 0
+  while (jumpHeight < 0) {
+    getFirst(player).y++;
+    jumpHeight++;
+  }
+  while (jumpHeight > 0) {
+    getFirst(player).y--;
+    jumpHeight--;
+  }
+}
+
 // Gravity Code
 function gravityPull() {
-  let playerCoord = getFirst(player);
+  playerCoord = getFirst(player);
   let downCollision = getTile(playerCoord.x, playerCoord.y + 1);
   let upCollision = getTile(playerCoord.x, playerCoord.y - 1);
   // Collision check
   if (gravity == "down" && downCollision.length != 0) {
     // Checks if gravity up and if there is a block above the player
     isMoving = 0;
+    ableToJump = 0; // Resets jump counter
   } else if (gravity == "up" && upCollision.length != 0) {
     // Checks if gravity up and if there is a block above the player
     isMoving = 0;
+    ableToJump = 0; // Resets jump counter
   } else {
     isMoving += 1; // Jumping feels better requiring two iterations than longer intervals
   }
@@ -453,4 +559,5 @@ function setTextures() {
 
 // let intervalName = setInterval(code, delay) Where delay is measured in milliseconds
 let gravityLoopInterval = setInterval(gravityPull, 400); // Set interval for gravity calculation
+let jumpLoopInterval = setInterval(jumpPull, 100); // Set interval for jump calculation
 ```
