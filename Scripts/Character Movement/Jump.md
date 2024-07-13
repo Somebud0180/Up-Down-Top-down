@@ -11,6 +11,10 @@ This includes jump (Double and Single), gravity (Up, Down, Top-down), and moveme
  
 ### Variables
 
+**downCollision**: A variable containing the tile below the player, used to check for collision in gravityPull().
+
+**upCollision**: A variable containing the tile above the player, used to check for collision in gravityPull().
+
 **jumpHeight**: A variable used to track how high the player should jump. Set by jumpUp(), used in jumpPull()
 
 **ableToJump**: A variable used to track if the player can jump. Increased by jumpUp(), reset by gravityPull()
@@ -52,6 +56,7 @@ let gravity = "down";
 let rotation = "horizontal";
 let jumpHeight = 0; // Check jumpUp()
 let ableToJump = 0; // Check jumpUp()
+let playerCoord;
 
 // Textures
 const playerDown = bitmap`
@@ -196,7 +201,7 @@ function jumpPull() {
 
 // Gravity Code
 function gravityPull() {
-  let playerCoord = getFirst(player);
+  playerCoord = getFirst(player);
   let downCollision = getTile(playerCoord.x, playerCoord.y + 1);
   let upCollision = getTile(playerCoord.x, playerCoord.y - 1);
   // Collision check
@@ -282,6 +287,7 @@ const player = "p";
 // Set Defaults
 let jumpHeight = 0; // Check jumpUp()
 let ableToJump = 0; // Check jumpUp()
+let playerCoord;
 
 const playerTexture = bitmap`
 ................
@@ -356,7 +362,7 @@ function jumpPull() {
 
 // Gravity Code
 function gravityPull() {
-  let playerCoord = getFirst(player);
+  playerCoord = getFirst(player);
   let downCollision = getTile(playerCoord.x, playerCoord.y + 1);
   // Collision check
   if (downCollision.length != 0) {
@@ -402,6 +408,7 @@ let currentPlayer = playerDown;
 let gravity = "down";
 let jumpHeight = 0; // Check jumpUp()
 let ableToJump = 0; // Check jumpUp()
+let playerCoord;
 
 // Textures
 const playerDown = bitmap`
@@ -497,7 +504,7 @@ function jumpPull() {
 
 // Gravity Code
 function gravityPull() {
-  let playerCoord = getFirst(player);
+  playerCoord = getFirst(player);
   let downCollision = getTile(playerCoord.x, playerCoord.y + 1);
   let upCollision = getTile(playerCoord.x, playerCoord.y - 1);
   // Collision check
