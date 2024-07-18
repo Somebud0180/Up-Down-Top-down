@@ -654,7 +654,7 @@ let jumpLoopInterval = setInterval(jumpPull, 100); // Set interval for jump calc
 - Make player texture static
 - Remove rotation variable
 - Remove gravity variable
-- Remove characterInit(), you may call setTextures() instead or move it away from function.
+- Remove characterInit(), while not needed, you may call setTextures() instead.
 
 #### Controls
 | Key | Action                  |
