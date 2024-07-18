@@ -4,7 +4,7 @@ This includes jump (Double and Single), gravity (Up, Down, Top-down), and moveme
 Trimmed Down:
 - [Without top-down rotation](#for-gravity--jump-code-without-top-down-rotation)
 - [Without top-down](#for-gravity--jump-code-without-top-down-rotation)
-- [Gravity downwards only](#for-gravity--jump-code-without-top-down-rotation)
+- [Gravity downwards only](#For-gravity-&-jump-code-solely-in-downward-direction)
   
 ### Pre-requisites
 - Your player in the map, or a way to spawn the player
