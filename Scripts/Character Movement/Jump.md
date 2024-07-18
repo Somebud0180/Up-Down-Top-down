@@ -2,8 +2,8 @@
 This includes jump (Double and Single), gravity (Up, Down, Top-down), and movement code. 
 
 Trimmed Down:
-- [Without top-down rotation](#for-gravity--jump-code-without-top-down-rotation)
-- [Without top-down](#for-gravity--jump-code-without-top-down-rotation)
+- [Without top-down rotation](#for-gravity-&-jump-code-without-top-down-rotation)
+- [Without top-down](#for-gravity-&-jump-code-without-top-down)
 - [Gravity downwards only](#For-gravity-&-jump-code-solely-in-downward-direction)
   
 ### Pre-requisites
