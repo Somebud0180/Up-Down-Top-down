@@ -13,6 +13,6 @@ This directory includes documentations on most of the important, non-specific co
   
     This document provides the code for the darkness effect that is applied on top-down maps in the game.
   
-- [Main Menu](Scripts/Main%20Menu.md)
+- [Main Menu](Main%20Menu.md)
   
     This document provides the code for the main menu seen in the game.
