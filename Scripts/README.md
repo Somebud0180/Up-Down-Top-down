@@ -1,7 +1,7 @@
 ## Scripts
 This directory includes documentations on most of the important, non-specific code used in the game.
 
-- [Character Movement](Scripts/Character%20Movement/)
+- [Character Movement](Character%20Movement/)
   
     This includes
     - Movement Code (as is)
@@ -9,7 +9,7 @@ This directory includes documentations on most of the important, non-specific co
     - Gravity Code
     - Jump Code
 
-- [Darkness Effect](Scripts/Darkness%20Effect.md)
+- [Darkness Effect](Darkness%20Effect.md)
   
     This document provides the code for the darkness effect that is applied on top-down maps in the game.
   
